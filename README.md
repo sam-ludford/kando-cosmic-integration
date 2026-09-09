@@ -1,0 +1,39 @@
+# kando-cosmic-helper
+
+Small Rust daemon that gives Kando's COSMIC backend access to things cosmic-comp does
+not expose to Electron: the pointer position, the focused window, window activation,
+key simulation and pointer warping. It serves `menu.kando.CosmicIntegration1` on the
+session bus at `/menu/kando/CosmicIntegration`.
+
+| Feature          | Wayland protocol                                   |
+| ---------------- | -------------------------------------------------- |
+| Pointer position | `zwlr_layer_shell_v1` overlay + `wl_pointer.enter` |
+| Pointer warp     | `wp_pointer_warp_v1`                               |
+| Windows / focus  | `ext_foreign_toplevel_list_v1` + `zcosmic_toplevel_info_v1` |
+| Activate window  | `zcosmic_toplevel_manager_v1`                      |
+| Key simulation   | `zwp_virtual_keyboard_manager_v1`                  |
+
+Global shortcuts are not possible on COSMIC (no GlobalShortcuts portal). Bind
+`kando --menu "Menu Name"` to a custom shortcut in COSMIC Settings instead.
+
+## Build
+
+```bash
+sudo apt install build-essential pkg-config libxkbcommon-dev
+cargo build --release
+```
+
+The Kando backend looks for the binary in `$KANDO_COSMIC_HELPER`, next to the packaged
+app, in `target/{release,debug}/` of this directory (development builds) and finally on
+`$PATH`. If it is not already running on the bus, Kando spawns it with
+`daemon --exit-with-parent`.
+
+## CLI
+
+```
+kando-cosmic-helper [daemon] [--exit-with-parent] [--pointer-timeout-ms N]
+kando-cosmic-helper pointer [timeout-ms]
+kando-cosmic-helper move <dx> <dy>
+kando-cosmic-helper windows | focused | focus <app_id> <title>
+kando-cosmic-helper keys <x11keycode:down|up[:delay-ms]>...
+```
