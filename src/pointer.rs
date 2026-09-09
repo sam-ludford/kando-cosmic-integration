@@ -395,7 +395,8 @@ pub fn query_pointer(timeout: Duration) -> Result<PointerInfo, Error> {
     }
 
     let start = Instant::now();
-    let result = wait_for_hit(&conn, &mut queue, &mut state, timeout);
+    let result = crate::util::dispatch_until(&conn, &mut queue, &mut state, timeout, |s| s.hit.is_some())
+        .and_then(|_| state.hit.ok_or(Error::Timeout(timeout)));
     let elapsed = start.elapsed();
 
     // Tear down in the correct order: pointer/touch, layer surfaces, surfaces, buffers.
@@ -420,42 +421,4 @@ pub fn query_pointer(timeout: Duration) -> Result<PointerInfo, Error> {
     let (output_id, lx, ly) = result?;
     let output = state.outputs.get(&output_id).map(|(_, i)| i.clone()).unwrap_or_default();
     Ok(PointerInfo { x: output.x as f64 + lx, y: output.y as f64 + ly, output, elapsed })
-}
-
-fn wait_for_hit(
-    conn: &Connection,
-    queue: &mut wayland_client::EventQueue<State>,
-    state: &mut State,
-    timeout: Duration,
-) -> Result<(u32, f64, f64), Error> {
-    use std::os::fd::AsRawFd;
-    let start = Instant::now();
-    loop {
-        queue.dispatch_pending(state).map_err(|e| Error::Wayland(e.to_string()))?;
-        if let Some(hit) = state.hit {
-            return Ok(hit);
-        }
-        let remaining = timeout.checked_sub(start.elapsed()).ok_or(Error::Timeout(timeout))?;
-        conn.flush().map_err(|e| Error::Wayland(e.to_string()))?;
-        let Some(guard) = queue.prepare_read() else { continue };
-        let mut pfd = libc::pollfd { fd: guard.connection_fd().as_raw_fd(), events: libc::POLLIN, revents: 0 };
-        let ret = unsafe { libc::poll(&mut pfd, 1, remaining.as_millis() as i32) };
-        if ret > 0 {
-            match guard.read() {
-                Ok(_) => {}
-                Err(wayland_client::backend::WaylandError::Io(e))
-                    if e.kind() == std::io::ErrorKind::WouldBlock => {}
-                Err(e) => return Err(Error::Wayland(e.to_string())),
-            }
-        } else if ret == 0 {
-            drop(guard);
-            return Err(Error::Timeout(timeout));
-        } else {
-            drop(guard);
-            let err = std::io::Error::last_os_error();
-            if err.kind() != std::io::ErrorKind::Interrupted {
-                return Err(Error::Wayland(err.to_string()));
-            }
-        }
-    }
 }
