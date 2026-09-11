@@ -290,8 +290,10 @@ impl Dispatch<ext_workspace_handle_v1::ExtWorkspaceHandleV1, ()> for State {
             ext_workspace_handle_v1::Event::Name { name } => ws.info.name = name,
             ext_workspace_handle_v1::Event::Coordinates { coordinates } => {
                 ws.info.coordinates = coordinates
-                    .chunks_exact(4)
-                    .map(|c| u32::from_ne_bytes([c[0], c[1], c[2], c[3]]))
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .map(|c| u32::from_ne_bytes(*c))
                     .collect();
             }
             ext_workspace_handle_v1::Event::State { state: s } => {
@@ -396,8 +398,10 @@ impl Dispatch<zcosmic_toplevel_handle_v1::ZcosmicToplevelHandleV1, ()> for State
         match event {
             zcosmic_toplevel_handle_v1::Event::State { state: raw } => {
                 t.activated = raw
-                    .chunks_exact(4)
-                    .map(|c| u32::from_ne_bytes([c[0], c[1], c[2], c[3]]))
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .map(|c| u32::from_ne_bytes(*c))
                     .any(|v| v == zcosmic_toplevel_handle_v1::State::Activated as u32);
             }
             zcosmic_toplevel_handle_v1::Event::OutputEnter { output } => t.outputs.push(output),

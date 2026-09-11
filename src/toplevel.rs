@@ -197,8 +197,10 @@ impl Dispatch<zcosmic_toplevel_handle_v1::ZcosmicToplevelHandleV1, ()> for State
         };
         if let zcosmic_toplevel_handle_v1::Event::State { state: raw } = event {
             let states: Vec<u32> = raw
-                .chunks_exact(4)
-                .map(|c| u32::from_ne_bytes([c[0], c[1], c[2], c[3]]))
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .map(|c| u32::from_ne_bytes(*c))
                 .collect();
             entry.info.activated =
                 states.contains(&(zcosmic_toplevel_handle_v1::State::Activated as u32));
