@@ -1,0 +1,58 @@
+#!/bin/sh
+# SPDX-FileCopyrightText: Sam Ludford <samludford76@gmail.com>
+# SPDX-License-Identifier: MIT
+# kando-menu: open a Kando menu through the supervised kando.service instance.
+#
+# Usage: kando-menu "Menu Name"      open a menu (starts/heals the service first)
+#        kando-menu --ensure         only make sure the supervised instance is the primary
+#
+# Why: `kando --menu` started while no Kando runs becomes an unsupervised primary
+# instance; the service then exits with "Kando is already running" and nothing
+# restarts Kando when it dies. This script keeps the service as the one primary.
+
+LOCK="${XDG_CONFIG_HOME:-$HOME/.config}/kando/SingletonLock"
+
+service_pid() { systemctl --user show -p MainPID --value kando.service 2>/dev/null; }
+
+kill_stray_primary() {
+    pid=$(readlink "$LOCK" 2>/dev/null | sed 's/.*-//')
+    [ -n "$pid" ] || return 0
+    kill -0 "$pid" 2>/dev/null || return 0
+    [ "$pid" = "$(service_pid)" ] && return 0
+    # A Kando that is not the service's process: replace it with the supervised one.
+    kill "$pid" 2>/dev/null
+    for _ in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$pid" 2>/dev/null || break; sleep 0.2; done
+    kill -9 "$pid" 2>/dev/null
+}
+
+ensure() {
+    started=0
+    if ! systemctl --user is-active --quiet kando.service; then
+        kill_stray_primary
+        systemctl --user reset-failed kando.service 2>/dev/null
+        systemctl --user start kando.service
+        started=1
+    fi
+    # Warm instance: the COSMIC backend owns its helper name on the session bus.
+    # Cold start: wait for Kando's own "is ready" line from the new main process.
+    for _ in $(seq 1 80); do
+        if [ "$started" = 1 ]; then
+            pid=$(service_pid)
+            if [ -n "$pid" ] && [ "$pid" != 0 ] && journalctl --user -u kando.service _PID="$pid" --no-pager -q 2>/dev/null | grep -q "is ready"; then
+                return 0
+            fi
+        elif busctl --user list 2>/dev/null | grep -q '^menu.kando.CosmicIntegration '; then
+            return 0
+        fi
+        sleep 0.25
+    done
+    return 1
+}
+
+case "$1" in
+    --ensure) kill_stray_primary; exit 0 ;;
+    "") echo "usage: kando-menu \"Menu Name\" | --ensure" >&2; exit 2 ;;
+esac
+
+ensure || echo "kando-menu: Kando did not become ready in time" >&2
+exec kando --menu "$1"

@@ -68,6 +68,17 @@ kando --menu "Menu Name"
 
 Mouse buttons work the same way: divert a button in [Solaar](https://github.com/pwr-Solaar/Solaar) and add a rule that executes the command.
 
+## 🩹 Self-healing (optional)
+
+`make service` installs two small extras from `contrib/`:
+
+- **`kando.service`** (systemd user unit): starts Kando with your COSMIC session, restarts it if it crashes, and sets `XDG_SESSION_TYPE=wayland`, which systemd otherwise reports as "unspecified" so that Kando would refuse to pick a backend.
+- **`kando-menu "Menu Name"`**: use this instead of `kando --menu` in COSMIC shortcuts and Solaar rules. It starts or heals the service first, replaces any unsupervised Kando instance that would otherwise hold the single-instance lock, waits until Kando reports ready, and then opens the menu. A cold start takes a few seconds; warm opens are instant.
+
+On Ubuntu 24.04+ the kernel blocks unprivileged user namespaces for unconfined programs, which Electron's sandbox needs; `make apparmor` installs a permissive AppArmor profile for `/usr/lib/kando/kando`, the same approach Ubuntu uses for Chrome and VS Code.
+
+If a menu does nothing, check its *conditions* in Kando's settings first: a menu restricted to, say, windows titled `*youtube*` silently does nothing elsewhere.
+
 ## 🧩 D-Bus interface
 
 Bus name `menu.kando.CosmicIntegration`, object `/menu/kando/CosmicIntegration`, interface `menu.kando.CosmicIntegration1`:

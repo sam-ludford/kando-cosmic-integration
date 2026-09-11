@@ -5,7 +5,7 @@ PREFIX ?= $(HOME)/.local
 BIN     = $(PREFIX)/bin/kando-cosmic-helper
 RULE    = $(HOME)/.config/cosmic/com.system76.CosmicSettings.WindowRules/v1/tiling_exception_custom
 
-.PHONY: build install uninstall rule setup doctor
+.PHONY: build install uninstall rule setup doctor service apparmor
 
 build:
 	cargo build --release
@@ -31,6 +31,20 @@ setup: install
 
 doctor:
 	$(BIN) doctor
+
+## Optional: autostart Kando at login, restart it if it dies, and make shortcuts go
+## through the supervised instance (see README "Self-healing").
+service:
+	install -Dm755 contrib/kando-menu $(PREFIX)/bin/kando-menu
+	install -Dm644 contrib/kando.service $(HOME)/.config/systemd/user/kando.service
+	systemctl --user daemon-reload
+	systemctl --user enable --now kando.service
+	@echo "Point your COSMIC shortcuts / Solaar rules at: kando-menu \"Menu Name\""
+
+## Optional (Ubuntu 24.04+): let Kando's Electron sandbox create user namespaces.
+apparmor:
+	sudo install -Dm644 contrib/apparmor-kando /etc/apparmor.d/kando
+	sudo apparmor_parser -r /etc/apparmor.d/kando
 
 uninstall:
 	rm -f $(BIN)

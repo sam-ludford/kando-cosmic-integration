@@ -1,0 +1,22 @@
+# SPDX-FileCopyrightText: Sam Ludford <samludford76@gmail.com>
+# SPDX-License-Identifier: MIT
+
+[Unit]
+Description=Kando pie menu (COSMIC backend)
+PartOf=graphical-session.target
+After=graphical-session.target
+StartLimitIntervalSec=120
+StartLimitBurst=10
+
+[Service]
+Type=simple
+# Replace any unsupervised Kando instance so this one can take the singleton lock.
+ExecStartPre=-%h/.local/bin/kando-menu --ensure
+ExecStart=/usr/bin/kando
+Restart=always
+RestartSec=3
+# Under systemd the logind session type leaks in as "unspecified"; Kando needs "wayland".
+Environment=XDG_SESSION_TYPE=wayland
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: Sam Ludford <samludford76@gmail.com>
+# SPDX-License-Identifier: MIT
+# This profile allows everything and only exists to give the
+# application a name instead of having the label "unconfined",
+# which lets it create user namespaces for Electron's sandbox
+# while kernel.apparmor_restrict_unprivileged_userns=1.
+
+abi <abi/5.0>,
+include <tunables/global>
+
+profile kando /usr/lib/kando/kando flags=(unconfined) {
+  userns,
+  @{exec_path} mr,
+
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/kando>
+}
