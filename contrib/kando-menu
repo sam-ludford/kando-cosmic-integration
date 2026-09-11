@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: MIT
 # kando-menu: open a Kando menu through the supervised kando.service instance.
 #
-# Usage: kando-menu "Menu Name"      open a menu (starts/heals the service first)
+# Usage: kando-menu "Menu Name"      open a menu by name (starts/heals the service first)
+#        kando-menu --trigger ID     open the menu bound to shortcut ID, letting Kando pick
+#                                    among menus sharing that ID by their conditions
 #        kando-menu --ensure         only make sure the supervised instance is the primary
 #
 # Why: `kando --menu` started while no Kando runs becomes an unsupervised primary
@@ -51,7 +53,11 @@ ensure() {
 
 case "$1" in
     --ensure) kill_stray_primary; exit 0 ;;
-    "") echo "usage: kando-menu \"Menu Name\" | --ensure" >&2; exit 2 ;;
+    --trigger)
+        [ -n "$2" ] || { echo "usage: kando-menu --trigger ID" >&2; exit 2; }
+        ensure || echo "kando-menu: Kando did not become ready in time" >&2
+        exec kando --trigger "$2" ;;
+    "") echo "usage: kando-menu \"Menu Name\" | --trigger ID | --ensure" >&2; exit 2 ;;
 esac
 
 ensure || echo "kando-menu: Kando did not become ready in time" >&2

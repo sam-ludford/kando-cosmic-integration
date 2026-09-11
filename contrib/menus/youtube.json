@@ -1,0 +1,1893 @@
+{
+  "version": "3.0.0-beta.1",
+  "menu": {
+    "root": {
+      "type": "root",
+      "name": "YouTube",
+      "icon": "youtube",
+      "iconTheme": "simple-icons",
+      "activateWorkflow": {
+        "quickSelectKey": "Backspace",
+        "actions": [
+          {
+            "type": "close-menu"
+          }
+        ]
+      },
+      "children": [
+        {
+          "type": "button",
+          "name": "Play / Pause",
+          "icon": "play_pause",
+          "iconTheme": "material-symbols-rounded",
+          "selectWorkflow": {
+            "quickSelectKey": "K",
+            "actions": [
+              {
+                "type": "close-menu"
+              },
+              {
+                "type": "delay",
+                "duration": 0.15
+              },
+              {
+                "type": "execute-macro",
+                "macro": [
+                  {
+                    "type": "keyDown",
+                    "key": "KeyK",
+                    "delay": 0
+                  },
+                  {
+                    "type": "keyUp",
+                    "key": "KeyK",
+                    "delay": 30
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "submenu",
+          "name": "Forward",
+          "icon": "fast_forward",
+          "iconTheme": "material-symbols-rounded",
+          "openWorkflow": {
+            "quickSelectKey": "F",
+            "actions": []
+          },
+          "activateWorkflow": {
+            "quickSelectKey": "Backspace",
+            "actions": [
+              {
+                "type": "close-submenu"
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "button",
+              "name": "+5 s",
+              "icon": "forward_5",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "5",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowRight",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowRight",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "+15 s",
+              "icon": "forward_10",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "1",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "KeyL",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyL",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowRight",
+                        "delay": 70
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowRight",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "+30 s",
+              "icon": "forward_30",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "3",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "KeyL",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyL",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "KeyL",
+                        "delay": 70
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyL",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "KeyL",
+                        "delay": 70
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyL",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Next video",
+              "icon": "skip_next",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "N",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "KeyN",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyN",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Skip to end",
+              "icon": "last_page",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "E",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "End",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "End",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "submenu",
+          "name": "Speed",
+          "icon": "speed",
+          "iconTheme": "material-symbols-rounded",
+          "openWorkflow": {
+            "quickSelectKey": "S",
+            "actions": []
+          },
+          "activateWorkflow": {
+            "quickSelectKey": "Backspace",
+            "actions": [
+              {
+                "type": "close-submenu"
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "button",
+              "name": "Faster +0.25",
+              "icon": "add",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "F",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "Period",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Period",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Slower -0.25",
+              "icon": "remove",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "S",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "Comma",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Comma",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Much faster +1.0",
+              "icon": "keyboard_double_arrow_up",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "U",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "Period",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Period",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "Period",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Period",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "Period",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Period",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "Period",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Period",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Much slower -1.0",
+              "icon": "keyboard_double_arrow_down",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "D",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "Comma",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Comma",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "Comma",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Comma",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "Comma",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Comma",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "Comma",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Comma",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Frame forward",
+              "icon": "skip_next",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "N",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "Period",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Period",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Frame back",
+              "icon": "skip_previous",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "B",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "Comma",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Comma",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "submenu",
+          "name": "Volume",
+          "icon": "volume_up",
+          "iconTheme": "material-symbols-rounded",
+          "openWorkflow": {
+            "quickSelectKey": "V",
+            "actions": []
+          },
+          "activateWorkflow": {
+            "quickSelectKey": "Backspace",
+            "actions": [
+              {
+                "type": "close-submenu"
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "button",
+              "name": "+5 %",
+              "icon": "volume_up",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "1",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "+10 %",
+              "icon": "volume_up",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "2",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "+20 %",
+              "icon": "volume_up",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "3",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "+30 %",
+              "icon": "volume_up",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "4",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowUp",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowUp",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Mute / unmute",
+              "icon": "volume_off",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "M",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "KeyM",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyM",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "-30 %",
+              "icon": "volume_down",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "7",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "-20 %",
+              "icon": "volume_down",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "8",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "-10 %",
+              "icon": "volume_down",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "9",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 50
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "-5 %",
+              "icon": "volume_down",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "0",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowDown",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowDown",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "submenu",
+          "name": "YouTube pages",
+          "icon": "youtube",
+          "iconTheme": "material-symbols-rounded",
+          "openWorkflow": {
+            "quickSelectKey": "Y",
+            "actions": []
+          },
+          "activateWorkflow": {
+            "quickSelectKey": "Backspace",
+            "actions": [
+              {
+                "type": "close-submenu"
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "button",
+              "name": "Home",
+              "icon": "home",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "H",
+                "actions": [
+                  {
+                    "type": "open-uri",
+                    "uri": "https://www.youtube.com"
+                  },
+                  {
+                    "type": "close-menu"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "History",
+              "icon": "history",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "I",
+                "actions": [
+                  {
+                    "type": "open-uri",
+                    "uri": "https://www.youtube.com/feed/history"
+                  },
+                  {
+                    "type": "close-menu"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Subscriptions",
+              "icon": "subscriptions",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "S",
+                "actions": [
+                  {
+                    "type": "open-uri",
+                    "uri": "https://www.youtube.com/feed/subscriptions"
+                  },
+                  {
+                    "type": "close-menu"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Watch later",
+              "icon": "watch_later",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "W",
+                "actions": [
+                  {
+                    "type": "open-uri",
+                    "uri": "https://www.youtube.com/playlist?list=WL"
+                  },
+                  {
+                    "type": "close-menu"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Liked videos",
+              "icon": "thumb_up",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "L",
+                "actions": [
+                  {
+                    "type": "open-uri",
+                    "uri": "https://www.youtube.com/playlist?list=LL"
+                  },
+                  {
+                    "type": "close-menu"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Shorts",
+              "icon": "smartphone",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "O",
+                "actions": [
+                  {
+                    "type": "open-uri",
+                    "uri": "https://www.youtube.com/shorts"
+                  },
+                  {
+                    "type": "close-menu"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "submenu",
+          "name": "Jump to",
+          "icon": "timelapse",
+          "iconTheme": "material-symbols-rounded",
+          "openWorkflow": {
+            "quickSelectKey": "J",
+            "actions": []
+          },
+          "activateWorkflow": {
+            "quickSelectKey": "Backspace",
+            "actions": [
+              {
+                "type": "close-submenu"
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "button",
+              "name": "Start",
+              "icon": "first_page",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "0",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "Digit0",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Digit0",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "25 %",
+              "icon": "circle",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "2",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "Digit2",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Digit2",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "50 %",
+              "icon": "adjust",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "5",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "Digit5",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Digit5",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "75 %",
+              "icon": "brightness_medium",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "7",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "Digit7",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Digit7",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "90 %",
+              "icon": "brightness_high",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "9",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "Digit9",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Digit9",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "submenu",
+          "name": "Player",
+          "icon": "smart_display",
+          "iconTheme": "material-symbols-rounded",
+          "openWorkflow": {
+            "quickSelectKey": "L",
+            "actions": []
+          },
+          "activateWorkflow": {
+            "quickSelectKey": "Backspace",
+            "actions": [
+              {
+                "type": "close-submenu"
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "button",
+              "name": "Fullscreen",
+              "icon": "fullscreen",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "F",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "KeyF",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyF",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Theater mode",
+              "icon": "aspect_ratio",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "T",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "KeyT",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyT",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Miniplayer",
+              "icon": "picture_in_picture_alt",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "I",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "KeyI",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyI",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Captions",
+              "icon": "closed_caption",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "C",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "KeyC",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyC",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Search YouTube",
+              "icon": "search",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "S",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "Slash",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Slash",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "submenu",
+          "name": "Back",
+          "icon": "fast_rewind",
+          "iconTheme": "material-symbols-rounded",
+          "openWorkflow": {
+            "quickSelectKey": "B",
+            "actions": []
+          },
+          "activateWorkflow": {
+            "quickSelectKey": "Backspace",
+            "actions": [
+              {
+                "type": "close-submenu"
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "button",
+              "name": "-5 s",
+              "icon": "replay_5",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "5",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowLeft",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "-15 s",
+              "icon": "replay_10",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "1",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "KeyJ",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyJ",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "ArrowLeft",
+                        "delay": 70
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ArrowLeft",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "-30 s",
+              "icon": "replay_30",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "3",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "KeyJ",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyJ",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "KeyJ",
+                        "delay": 70
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyJ",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "KeyJ",
+                        "delay": 70
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyJ",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Previous video",
+              "icon": "skip_previous",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "P",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "ShiftLeft",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyDown",
+                        "key": "KeyP",
+                        "delay": 20
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "KeyP",
+                        "delay": 30
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "ShiftLeft",
+                        "delay": 20
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "button",
+              "name": "Restart video",
+              "icon": "first_page",
+              "iconTheme": "material-symbols-rounded",
+              "selectWorkflow": {
+                "quickSelectKey": "R",
+                "actions": [
+                  {
+                    "type": "close-menu"
+                  },
+                  {
+                    "type": "delay",
+                    "duration": 0.15
+                  },
+                  {
+                    "type": "execute-macro",
+                    "macro": [
+                      {
+                        "type": "keyDown",
+                        "key": "Digit0",
+                        "delay": 0
+                      },
+                      {
+                        "type": "keyUp",
+                        "key": "Digit0",
+                        "delay": 30
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "shortcut": "",
+    "shortcutID": "example-menu",
+    "conditions": {
+      "windowName": "youtube"
+    },
+    "useFixedPosition": false,
+    "fixedMenuPosition": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "anchored": false,
+    "hoverMode": false,
+    "tags": [
+      "youtube",
+      "media"
+    ]
+  }
+}

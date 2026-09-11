@@ -79,6 +79,16 @@ On Ubuntu 24.04+ the kernel blocks unprivileged user namespaces for unconfined p
 
 If a menu does nothing, check its *conditions* in Kando's settings first: a menu restricted to, say, windows titled `*youtube*` silently does nothing elsewhere.
 
+## 🎬 Context menus (example: YouTube)
+
+Kando picks between menus that share one trigger by their *conditions*. `contrib/menus/youtube.json` is a YouTube remote (play/pause, seek ±5/15/30 s, speed ±0.25, volume ±5–30 %, fullscreen/theater/captions, jump to 0–90 %, Home/History/Subscriptions/Watch later) bound to shortcut id `example-menu` with the condition `windowName: youtube`. Import it in Kando's settings, then open menus with the *trigger* rather than a name so the condition can apply:
+
+```
+kando-menu --trigger example-menu      # YouTube menu on a YouTube tab, Example Menu elsewhere
+```
+
+Conditions match the focused window's title (case-insensitive substring, or `/regex/`), which is what the key presses go to. A menu opened by name (`--menu "Example Menu"`) ignores other menus, so give context menus the same shortcut id and trigger by id.
+
 ## 🧩 D-Bus interface
 
 Bus name `menu.kando.CosmicIntegration`, object `/menu/kando/CosmicIntegration`, interface `menu.kando.CosmicIntegration1`:
