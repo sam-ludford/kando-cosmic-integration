@@ -1,8 +1,9 @@
 //! DBus front-end. Bus name `menu.kando.CosmicIntegration`, object path
 //! `/menu/kando/CosmicIntegration`, interface `menu.kando.CosmicIntegration1`.
 
-use std::sync::Mutex;
-use std::time::Duration;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use zbus::fdo;
 
@@ -13,16 +14,44 @@ use crate::toplevel;
 pub const BUS_NAME: &str = "menu.kando.CosmicIntegration";
 pub const OBJECT_PATH: &str = "/menu/kando/CosmicIntegration";
 
+/// Measured work areas per output name, with the time of measurement.
+pub type WorkAreaCache = Arc<Mutex<HashMap<String, (Instant, pointer::Rect)>>>;
+
+/// Measuring the work area costs a few hundred milliseconds, so it is cached this long.
+const WORK_AREA_MAX_AGE: Duration = Duration::from_secs(600);
+
 pub struct Helper {
     pub pointer_timeout: Duration,
     /// Serialises Wayland work; mapping two sets of probe overlays at once would
     /// make the enter events ambiguous.
     lock: Mutex<()>,
+    work_areas: WorkAreaCache,
 }
 
 impl Helper {
-    pub fn new(pointer_timeout: Duration) -> Self {
-        Helper { pointer_timeout, lock: Mutex::new(()) }
+    pub fn new(pointer_timeout: Duration, work_areas: WorkAreaCache) -> Self {
+        Helper { pointer_timeout, lock: Mutex::new(()), work_areas }
+    }
+
+    /// Pointer position plus the work area of its output, re-measuring the latter only
+    /// when the cached value is missing or old.
+    fn pointer_with_work_area(&self) -> Result<pointer::PointerInfo, pointer::Error> {
+        let mut p = pointer::query_pointer(self.pointer_timeout)?;
+        let cached = self
+            .work_areas
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(&p.output.name)
+            .filter(|(at, _)| at.elapsed() < WORK_AREA_MAX_AGE)
+            .map(|(_, r)| *r);
+        match cached {
+            Some(rect) => p.work_area = rect,
+            None => {
+                p = pointer::query_pointer_and_work_area(self.pointer_timeout)?;
+                remember_work_area(&self.work_areas, &p);
+            }
+        }
+        Ok(p)
     }
 
     fn guarded<T>(&self, f: impl FnOnce() -> Result<T, pointer::Error>) -> fdo::Result<T> {
@@ -31,11 +60,11 @@ impl Helper {
     }
 }
 
-/// (x, y, outputX, outputY, outputWidth, outputHeight)
-type PointerTuple = (f64, f64, i32, i32, i32, i32);
-
-fn pointer_tuple(p: &pointer::PointerInfo) -> PointerTuple {
-    (p.x, p.y, p.output.x, p.output.y, p.output.width, p.output.height)
+pub fn remember_work_area(cache: &WorkAreaCache, p: &pointer::PointerInfo) {
+    cache
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .insert(p.output.name.clone(), (Instant::now(), p.work_area));
 }
 
 #[zbus::interface(name = "menu.kando.CosmicIntegration1")]
@@ -52,14 +81,14 @@ impl Helper {
     }
 
     /// Everything Kando needs to open a menu, in one call:
-    /// (windowTitle, appId, pointerX, pointerY, outputX, outputY, outputWidth, outputHeight)
+    /// (windowTitle, appId, pointerX, pointerY, workAreaX, workAreaY, workAreaWidth, workAreaHeight)
     #[zbus(name = "GetWMInfo")]
     fn get_wm_info(&self) -> fdo::Result<(String, String, f64, f64, i32, i32, i32, i32)> {
         self.guarded(|| {
             let window = toplevel::focused_toplevel()?.unwrap_or_default();
-            let p = pointer::query_pointer(self.pointer_timeout)?;
-            let (x, y, ox, oy, ow, oh) = pointer_tuple(&p);
-            Ok((window.title, window.app_id, x, y, ox, oy, ow, oh))
+            let p = self.pointer_with_work_area()?;
+            let w = p.work_area;
+            Ok((window.title, window.app_id, p.x, p.y, w.x, w.y, w.width, w.height))
         })
     }
 

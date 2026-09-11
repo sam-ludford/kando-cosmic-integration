@@ -34,6 +34,14 @@ pub struct OutputInfo {
     pub height: i32,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Rect {
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+}
+
 #[derive(Debug, Clone)]
 pub struct PointerInfo {
     /// Global logical coordinates.
@@ -41,6 +49,9 @@ pub struct PointerInfo {
     pub y: f64,
     /// Output the pointer is on.
     pub output: OutputInfo,
+    /// The output's area not covered by panels (exclusive zones). Equals the output
+    /// geometry if it could not be measured.
+    pub work_area: Rect,
     /// Time from mapping the overlays until the enter event arrived.
     pub elapsed: Duration,
 }
@@ -70,8 +81,17 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum OverlayKind {
+    /// Covers the whole output (exclusive zone -1): surface-local == output-local.
+    Full,
+    /// Respects panels' exclusive zones: its size is the work area.
+    WorkArea,
+}
+
 struct Overlay {
     output_id: u32,
+    kind: OverlayKind,
     surface: wl_surface::WlSurface,
     layer: zwlr_layer_surface_v1::ZwlrLayerSurfaceV1,
     buffer: Option<wl_buffer::WlBuffer>,
@@ -82,6 +102,8 @@ struct Overlay {
 #[derive(Debug, Clone, Copy)]
 struct Hit {
     output_id: u32,
+    #[allow(dead_code)]
+    kind: OverlayKind,
     x: f64,
     y: f64,
     /// Serial of the enter event; required by wp_pointer_warp_v1.
@@ -100,7 +122,10 @@ struct State {
     has_pointer: bool,
     has_touch: bool,
     overlays: Vec<Overlay>,
+    /// Enter on a Full overlay.
     hit: Option<Hit>,
+    /// Enter on a WorkArea overlay (only after the Full overlays are gone).
+    work_hit: Option<Hit>,
 }
 
 impl State {
@@ -295,10 +320,12 @@ impl Dispatch<wl_pointer::WlPointer, ()> for State {
     ) {
         match event {
             wl_pointer::Event::Enter { serial, surface, surface_x, surface_y } => {
-                if state.hit.is_none() {
-                    if let Some(o) = state.overlay_for_surface(&surface) {
-                        state.hit =
-                            Some(Hit { output_id: o.output_id, x: surface_x, y: surface_y, serial });
+                if let Some(o) = state.overlay_for_surface(&surface) {
+                    let hit = Hit { output_id: o.output_id, kind: o.kind, x: surface_x, y: surface_y, serial };
+                    match o.kind {
+                        OverlayKind::Full if state.hit.is_none() => state.hit = Some(hit),
+                        OverlayKind::WorkArea if state.work_hit.is_none() => state.work_hit = Some(hit),
+                        _ => {}
                     }
                 }
             }
@@ -324,9 +351,12 @@ impl Dispatch<wl_touch::WlTouch, ()> for State {
         _: &QueueHandle<Self>,
     ) {
         if let wl_touch::Event::Down { serial, surface, x, y, .. } = event {
-            if state.hit.is_none() {
-                if let Some(o) = state.overlay_for_surface(&surface) {
-                    state.hit = Some(Hit { output_id: o.output_id, x, y, serial });
+            if let Some(o) = state.overlay_for_surface(&surface) {
+                let hit = Hit { output_id: o.output_id, kind: o.kind, x, y, serial };
+                match o.kind {
+                    OverlayKind::Full if state.hit.is_none() => state.hit = Some(hit),
+                    OverlayKind::WorkArea if state.work_hit.is_none() => state.work_hit = Some(hit),
+                    _ => {}
                 }
             }
         }
@@ -361,7 +391,7 @@ impl Probe {
     /// exclusive keyboard interactivity: cosmic-comp only honours
     /// wp_pointer_warp_v1 for the keyboard-focused surface. Focus returns to the
     /// previous surface on unmap.
-    fn map(timeout: Duration, take_keyboard_focus: bool) -> Result<Self, Error> {
+    fn map(timeout: Duration, take_keyboard_focus: bool, measure_work_area: bool) -> Result<Self, Error> {
         let conn = Connection::connect_to_env().map_err(|e| Error::Connect(e.to_string()))?;
         let mut queue = conn.new_event_queue::<State>();
         let qh = queue.handle();
@@ -400,40 +430,54 @@ impl Probe {
         // One overlay per output so multi-monitor setups work regardless of which
         // output the compositor considers "active".
         let ids: Vec<u32> = state.outputs.keys().copied().collect();
-        for id in ids {
-            let output = state.outputs[&id].0.clone();
-            let surface = compositor.create_surface(&qh, ());
-            let layer = layer_shell.get_layer_surface(
-                &surface,
-                Some(&output),
-                zwlr_layer_shell_v1::Layer::Overlay,
-                "kando-pointer-probe".into(),
-                &qh,
-                id,
-            );
-            layer.set_size(0, 0);
-            layer.set_anchor(
-                zwlr_layer_surface_v1::Anchor::Top
-                    | zwlr_layer_surface_v1::Anchor::Bottom
-                    | zwlr_layer_surface_v1::Anchor::Left
-                    | zwlr_layer_surface_v1::Anchor::Right,
-            );
-            // Cover the whole output, ignoring panels, so surface-local == output-local.
-            layer.set_exclusive_zone(-1);
-            layer.set_keyboard_interactivity(if take_keyboard_focus {
-                zwlr_layer_surface_v1::KeyboardInteractivity::Exclusive
-            } else {
-                zwlr_layer_surface_v1::KeyboardInteractivity::None
-            });
-            surface.commit();
-            state.overlays.push(Overlay {
-                output_id: id,
-                surface,
-                layer,
-                buffer: None,
-                width: 0,
-                height: 0,
-            });
+        let kinds: &[OverlayKind] = if measure_work_area {
+            // Later layer surfaces stack above earlier ones, so the Full overlay ends
+            // up on top and receives the pointer first.
+            &[OverlayKind::WorkArea, OverlayKind::Full]
+        } else {
+            &[OverlayKind::Full]
+        };
+        for kind in kinds {
+            for id in &ids {
+                let output = state.outputs[id].0.clone();
+                let surface = compositor.create_surface(&qh, ());
+                let layer = layer_shell.get_layer_surface(
+                    &surface,
+                    Some(&output),
+                    zwlr_layer_shell_v1::Layer::Overlay,
+                    "kando-pointer-probe".into(),
+                    &qh,
+                    *id,
+                );
+                layer.set_size(0, 0);
+                layer.set_anchor(
+                    zwlr_layer_surface_v1::Anchor::Top
+                        | zwlr_layer_surface_v1::Anchor::Bottom
+                        | zwlr_layer_surface_v1::Anchor::Left
+                        | zwlr_layer_surface_v1::Anchor::Right,
+                );
+                layer.set_exclusive_zone(match kind {
+                    // Cover the whole output, ignoring panels: surface-local == output-local.
+                    OverlayKind::Full => -1,
+                    // Sized to the area left over by panels.
+                    OverlayKind::WorkArea => 0,
+                });
+                layer.set_keyboard_interactivity(if take_keyboard_focus && *kind == OverlayKind::Full {
+                    zwlr_layer_surface_v1::KeyboardInteractivity::Exclusive
+                } else {
+                    zwlr_layer_surface_v1::KeyboardInteractivity::None
+                });
+                surface.commit();
+                state.overlays.push(Overlay {
+                    output_id: *id,
+                    kind: *kind,
+                    surface,
+                    layer,
+                    buffer: None,
+                    width: 0,
+                    height: 0,
+                });
+            }
         }
 
         let start = Instant::now();
@@ -449,7 +493,7 @@ impl Probe {
             touch,
             keyboard,
             xdg_outputs,
-            hit: Hit { output_id: 0, x: 0.0, y: 0.0, serial: 0 },
+            hit: Hit { output_id: 0, kind: OverlayKind::Full, x: 0.0, y: 0.0, serial: 0 },
             elapsed,
         };
         match waited.and_then(|_| probe.state.hit.ok_or(Error::Timeout(timeout))) {
@@ -468,11 +512,54 @@ impl Probe {
         let hit = self.state.hit.unwrap_or(self.hit);
         let output =
             self.state.outputs.get(&hit.output_id).map(|(_, i)| i.clone()).unwrap_or_default();
-        PointerInfo {
-            x: output.x as f64 + hit.x,
-            y: output.y as f64 + hit.y,
-            output,
-            elapsed: self.elapsed,
+        let x = output.x as f64 + hit.x;
+        let y = output.y as f64 + hit.y;
+        let work_area = self.work_area(&output, x, y);
+        PointerInfo { x, y, output, work_area, elapsed: self.elapsed }
+    }
+
+    /// Work area of `output`: size from the WorkArea overlay's configure, origin from
+    /// the pointer entering it (global minus surface-local). Falls back to the output
+    /// geometry / origin when it could not be measured.
+    fn work_area(&self, output: &OutputInfo, gx: f64, gy: f64) -> Rect {
+        let mut rect = Rect { x: output.x, y: output.y, width: output.width, height: output.height };
+        let overlay = self
+            .state
+            .overlays
+            .iter()
+            .find(|o| o.kind == OverlayKind::WorkArea && o.output_id == self.hit.output_id);
+        if let Some(o) = overlay.filter(|o| o.width > 0 && o.height > 0) {
+            rect.width = o.width as i32;
+            rect.height = o.height as i32;
+            if let Some(wh) = self.state.work_hit.filter(|h| h.output_id == self.hit.output_id) {
+                rect.x = (gx - wh.x).round() as i32;
+                rect.y = (gy - wh.y).round() as i32;
+            }
+        }
+        rect
+    }
+
+    /// Remove the Full overlays so the pointer enters the WorkArea overlay underneath,
+    /// which reveals the work area's origin. Cheap: the compositor is already awake.
+    fn measure_work_area(&mut self, timeout: Duration) {
+        let mut remaining = Vec::new();
+        for o in self.state.overlays.drain(..) {
+            if o.kind == OverlayKind::Full {
+                o.layer.destroy();
+                o.surface.destroy();
+                if let Some(b) = o.buffer {
+                    b.destroy();
+                }
+            } else {
+                remaining.push(o);
+            }
+        }
+        self.state.overlays = remaining;
+        let result = crate::util::dispatch_until(&self.conn, &mut self.queue, &mut self.state, timeout, |s| {
+            s.work_hit.is_some()
+        });
+        if std::env::var_os("KANDO_HELPER_DEBUG").is_some() {
+            eprintln!("debug: work-area probe: {:?} hit={:?}", result.err(), self.state.work_hit);
         }
     }
 
@@ -521,7 +608,17 @@ impl Probe {
 
 /// Query the global pointer position. Blocks for at most `timeout`.
 pub fn query_pointer(timeout: Duration) -> Result<PointerInfo, Error> {
-    let mut probe = Probe::map(timeout, false)?;
+    let mut probe = Probe::map(timeout, false, false)?;
+    let info = probe.info();
+    probe.unmap();
+    Ok(info)
+}
+
+/// Like `query_pointer`, but also measures the panel-adjusted work area of the output
+/// the pointer is on.
+pub fn query_pointer_and_work_area(timeout: Duration) -> Result<PointerInfo, Error> {
+    let mut probe = Probe::map(timeout, false, true)?;
+    probe.measure_work_area(Duration::from_millis(1000));
     let info = probe.info();
     probe.unmap();
     Ok(info)
@@ -529,7 +626,7 @@ pub fn query_pointer(timeout: Duration) -> Result<PointerInfo, Error> {
 
 /// Move the pointer by (dx, dy) and return its new position.
 pub fn move_pointer(dx: f64, dy: f64, timeout: Duration) -> Result<PointerInfo, Error> {
-    let mut probe = Probe::map(timeout, true)?;
+    let mut probe = Probe::map(timeout, true, false)?;
     let result = probe.warp(dx, dy).map(|_| probe.info());
     probe.unmap();
     result

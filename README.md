@@ -16,6 +16,32 @@ session bus at `/menu/kando/CosmicIntegration`.
 Global shortcuts are not possible on COSMIC (no GlobalShortcuts portal). Bind
 `kando --menu "Menu Name"` to a custom shortcut in COSMIC Settings instead.
 
+## Window rule (required)
+
+cosmic-comp auto-tiles every new window unless it has a floating exception, and
+there is no protocol to opt out. Create
+`~/.config/cosmic/com.system76.CosmicSettings.WindowRules/v1/tiling_exception_custom`
+with this content (COSMIC reloads it immediately):
+
+```ron
+[
+    (
+        enabled: true,
+        appid: "menu.kando.Kando",
+        title: ".*",
+    ),
+]
+```
+
+Floating windows are clamped to two thirds of the output, so the daemon watches for
+Kando's menu window and maximizes it via `zcosmic_toplevel_manager_v1` as soon as it
+maps. Fullscreen is not used because cosmic-comp paints an opaque backdrop behind
+fullscreen windows.
+
+The work area (output minus panels) is measured once at startup by mapping two probe
+overlays, one ignoring exclusive zones and one respecting them, and cached per output
+for ten minutes.
+
 ## Build
 
 ```bash
