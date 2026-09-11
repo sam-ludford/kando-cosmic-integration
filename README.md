@@ -28,14 +28,25 @@ You need a Rust toolchain (`cargo`), `pkg-config` and `libxkbcommon-dev`.
 git clone https://github.com/sam-ludford/kando-cosmic-integration.git
 cd kando-cosmic-integration
 make install   # builds and installs ~/.local/bin/kando-cosmic-helper
-make rule      # adds the COSMIC floating-window rule for Kando (see below)
+make setup     # interactive wizard: floating rule, shortcut, named workspaces
+```
+
+The wizard (`kando-cosmic-helper setup`) checks that cosmic-comp offers everything the helper needs, adds the floating-window rule, creates a COSMIC keyboard shortcut for a menu of your choice, and pre-creates named workspaces for the example menu. `kando-cosmic-helper doctor` repeats the checks any time:
+
+```
+✓ XDG_CURRENT_DESKTOP = "COSMIC"
+✓ zwlr_layer_shell_v1 (v1+)
+✓ zcosmic_toplevel_info_v1 (v2+)
+...
+✓ floating-window rule in ~/.config/cosmic/com.system76.CosmicSettings.WindowRules/v1/tiling_exception_custom
+✓ a COSMIC custom shortcut running kando
 ```
 
 Kando starts the daemon itself when its COSMIC backend initializes; it looks for `kando-cosmic-helper` in `$KANDO_COSMIC_HELPER`, next to the packaged app, and on `$PATH`.
 
 ### Floating-window rule (required)
 
-cosmic-comp auto-tiles every new window unless there is an exception for it, and there is no protocol to opt out. `make rule` writes this to `~/.config/cosmic/com.system76.CosmicSettings.WindowRules/v1/tiling_exception_custom` (COSMIC reloads it immediately):
+cosmic-comp auto-tiles every new window unless there is an exception for it, and there is no protocol to opt out. `make setup` (or `make rule`) writes this to `~/.config/cosmic/com.system76.CosmicSettings.WindowRules/v1/tiling_exception_custom` (COSMIC reloads it immediately):
 
 ```ron
 [
@@ -76,6 +87,7 @@ Bus name `menu.kando.CosmicIntegration`, object `/menu/kando/CosmicIntegration`,
 The same binary doubles as a CLI, which is what the COSMIC example menu in Kando uses:
 
 ```
+kando-cosmic-helper setup | doctor
 kando-cosmic-helper [daemon] [--exit-with-parent] [--pointer-timeout-ms N]
 kando-cosmic-helper pointer | workarea | move <dx> <dy>
 kando-cosmic-helper windows | focused | focus <app_id> <title>

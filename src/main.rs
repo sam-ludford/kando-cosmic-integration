@@ -4,6 +4,7 @@
 mod dbus;
 mod keyboard;
 mod pointer;
+mod setup;
 mod toplevel;
 mod util;
 mod workspace;
@@ -11,7 +12,8 @@ mod workspace;
 use std::time::Duration;
 
 const USAGE: &str = "\
-usage: kando-cosmic-helper [daemon] [--exit-with-parent] [--pointer-timeout-ms N]
+usage: kando-cosmic-helper setup | doctor
+       kando-cosmic-helper [daemon] [--exit-with-parent] [--pointer-timeout-ms N]
        kando-cosmic-helper pointer [timeout-ms]
        kando-cosmic-helper workarea [timeout-ms]
        kando-cosmic-helper move <dx> <dy>
@@ -101,6 +103,16 @@ fn main() {
         None => daemon(&[]),
         Some("daemon") => daemon(&args[1..]),
         Some(flag) if flag.starts_with("--") => daemon(&args),
+        Some("setup") => {
+            if let Err(e) = setup::setup() {
+                fail(e);
+            }
+        }
+        Some("doctor") => {
+            if !setup::doctor() {
+                std::process::exit(1);
+            }
+        }
         Some("pointer") => {
             let timeout = args.get(1).and_then(|s| s.parse().ok()).unwrap_or(500u64);
             match pointer::query_pointer(Duration::from_millis(timeout)) {

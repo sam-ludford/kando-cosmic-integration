@@ -620,6 +620,14 @@ pub fn list_workspaces() -> Result<Vec<Workspace>, Error> {
     Ok(list)
 }
 
+/// Make sure the workspace called `name` exists (pinned and named) without switching.
+pub fn goto_workspace_no_switch(name: &str) -> Result<(), Error> {
+    let mut s = Session::open()?;
+    s.ensure(name)?;
+    s.close();
+    Ok(())
+}
+
 /// Switch to the workspace called `name`, creating it if necessary.
 pub fn goto_workspace(name: &str) -> Result<(), Error> {
     let mut s = Session::open()?;

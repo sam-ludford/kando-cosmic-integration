@@ -5,7 +5,7 @@ PREFIX ?= $(HOME)/.local
 BIN     = $(PREFIX)/bin/kando-cosmic-helper
 RULE    = $(HOME)/.config/cosmic/com.system76.CosmicSettings.WindowRules/v1/tiling_exception_custom
 
-.PHONY: build install uninstall rule
+.PHONY: build install uninstall rule setup doctor
 
 build:
 	cargo build --release
@@ -13,7 +13,7 @@ build:
 install: build
 	install -Dm755 target/release/kando-cosmic-helper $(BIN)
 	@echo "Installed $(BIN)"
-	@echo "Run 'make rule' to add the COSMIC floating-window exception for Kando."
+	@echo "Run 'make setup' for the interactive first-time setup (rule, shortcut, workspaces)."
 
 ## Adds the floating-window exception unless the file already mentions Kando.
 rule:
@@ -25,6 +25,12 @@ rule:
 	else \
 		cp data/tiling_exception_custom $(RULE) && echo "Wrote $(RULE)"; \
 	fi
+
+setup: install
+	$(BIN) setup
+
+doctor:
+	$(BIN) doctor
 
 uninstall:
 	rm -f $(BIN)
