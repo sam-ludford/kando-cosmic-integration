@@ -16,12 +16,19 @@ use wayland_protocols::ext::foreign_toplevel_list::v1::client::{
 pub use crate::pointer::Error;
 
 const DONE_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(1000);
+const FOCUS_SETTLE_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(700);
+
+pub fn is_kando(app_id: &str) -> bool {
+    app_id == "menu.kando.Kando"
+}
 
 #[derive(Debug, Clone, Default)]
 pub struct Toplevel {
     pub title: String,
     pub app_id: String,
     pub activated: bool,
+    pub maximized: bool,
+    pub sticky: bool,
 }
 
 struct Entry {
@@ -171,10 +178,13 @@ impl Dispatch<zcosmic_toplevel_handle_v1::ZcosmicToplevelHandleV1, ()> for State
             return;
         };
         if let zcosmic_toplevel_handle_v1::Event::State { state: raw } = event {
-            entry.info.activated = raw
+            let states: Vec<u32> = raw
                 .chunks_exact(4)
                 .map(|c| u32::from_ne_bytes([c[0], c[1], c[2], c[3]]))
-                .any(|v| v == zcosmic_toplevel_handle_v1::State::Activated as u32);
+                .collect();
+            entry.info.activated = states.contains(&(zcosmic_toplevel_handle_v1::State::Activated as u32));
+            entry.info.maximized = states.contains(&(zcosmic_toplevel_handle_v1::State::Maximized as u32));
+            entry.info.sticky = states.contains(&(zcosmic_toplevel_handle_v1::State::Sticky as u32));
         }
     }
 }
@@ -210,6 +220,18 @@ impl Session {
         // synchronously, so wait for the `done` event rather than a roundtrip.
         crate::util::dispatch_until(&conn, &mut queue, &mut state, DONE_TIMEOUT, |s| s.done)?;
         Ok(Session { queue, state })
+    }
+
+    /// Like `open`, but keeps dispatching for a moment until some window other than
+    /// Kando's own is activated. Right after Kando's menu closes, focus takes a few
+    /// milliseconds to return to the user's window.
+    fn open_with_focus() -> Result<Self, Error> {
+        let mut s = Session::open()?;
+        let conn = Connection::connect_to_env().map_err(|e| Error::Connect(e.to_string()))?;
+        let _ = crate::util::dispatch_until(&conn, &mut s.queue, &mut s.state, FOCUS_SETTLE_TIMEOUT, |st| {
+            st.entries.iter().any(|e| !e.closed && e.info.activated && !is_kando(&e.info.app_id))
+        });
+        Ok(s)
     }
 
     fn close(mut self) {
@@ -250,27 +272,44 @@ pub enum StateChange {
     Unfullscreen,
     Maximize,
     Unmaximize,
+    ToggleMaximize,
+    Minimize,
+    Unminimize,
+    ToggleSticky,
     Close,
 }
 
 /// Apply `change` to the first toplevel matching `app_id` and `title` (empty strings
-/// match any). Returns false if nothing matched.
+/// match any; the app id `@focused` selects the activated window). Returns false if
+/// nothing matched.
 pub fn set_toplevel_state(app_id: &str, title: &str, change: StateChange) -> Result<bool, Error> {
-    let mut s = Session::open()?;
+    let mut s = if app_id == "@focused" { Session::open_with_focus()? } else { Session::open()? };
     let manager =
         s.state.manager.clone().ok_or(Error::MissingGlobal("zcosmic_toplevel_manager_v1"))?;
     let target = s.state.entries.iter().find(|e| {
         !e.closed
-            && (app_id.is_empty() || e.info.app_id == app_id)
-            && (title.is_empty() || e.info.title == title)
+            && if app_id == "@focused" {
+                e.info.activated && !is_kando(&e.info.app_id)
+            } else {
+                (app_id.is_empty() || e.info.app_id == app_id)
+                    && (title.is_empty() || e.info.title == title)
+            }
     });
+    let maximized = target.map(|e| e.info.maximized).unwrap_or(false);
+    let sticky = target.map(|e| e.info.sticky).unwrap_or(false);
     let found = match target.and_then(|e| e.cosmic.clone()) {
         Some(handle) => {
             match change {
+                StateChange::ToggleMaximize if maximized => manager.unset_maximized(&handle),
+                StateChange::ToggleMaximize => manager.set_maximized(&handle),
                 StateChange::Fullscreen => manager.set_fullscreen(&handle, None),
                 StateChange::Unfullscreen => manager.unset_fullscreen(&handle),
                 StateChange::Maximize => manager.set_maximized(&handle),
                 StateChange::Unmaximize => manager.unset_maximized(&handle),
+                StateChange::Minimize => manager.set_minimized(&handle),
+                StateChange::Unminimize => manager.unset_minimized(&handle),
+                StateChange::ToggleSticky if sticky => manager.unset_sticky(&handle),
+                StateChange::ToggleSticky => manager.set_sticky(&handle),
                 StateChange::Close => manager.close(&handle),
             }
             true

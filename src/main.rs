@@ -3,6 +3,7 @@ mod keyboard;
 mod pointer;
 mod toplevel;
 mod util;
+mod workspace;
 
 use std::time::Duration;
 
@@ -108,7 +109,13 @@ fn main() {
         Some("windows") => match toplevel::list_toplevels() {
             Ok(list) => {
                 for t in list {
-                    println!("{}\t{:?}\t{:?}", if t.activated { "*" } else { " " }, t.app_id, t.title);
+                    println!(
+                        "{}{}\t{:?}\t{:?}",
+                        if t.activated { "*" } else { " " },
+                        if t.maximized { "M" } else { " " },
+                        t.app_id,
+                        t.title
+                    );
                 }
             }
             Err(e) => fail(e),
@@ -135,6 +142,10 @@ fn main() {
                 Some("unfullscreen") => toplevel::StateChange::Unfullscreen,
                 Some("maximize") => toplevel::StateChange::Maximize,
                 Some("unmaximize") => toplevel::StateChange::Unmaximize,
+                Some("toggle-maximize") => toplevel::StateChange::ToggleMaximize,
+                Some("minimize") => toplevel::StateChange::Minimize,
+                Some("unminimize") => toplevel::StateChange::Unminimize,
+                Some("toggle-sticky") => toplevel::StateChange::ToggleSticky,
                 Some("close") => toplevel::StateChange::Close,
                 _ => fail(USAGE),
             };
@@ -142,6 +153,36 @@ fn main() {
                 Ok(true) => {}
                 Ok(false) => fail("no matching window"),
                 Err(e) => fail(e),
+            }
+        }
+        Some("workspace") => {
+            let name = args.get(2).cloned().unwrap_or_default();
+            let result = match args.get(1).map(String::as_str) {
+                Some("list") => workspace::list_workspaces().map(|list| {
+                    for w in list {
+                        println!(
+                            "{}{}\t{:?}\tid={} at {:?}",
+                            if w.active { "*" } else { " " },
+                            if w.cosmic_state & 1 != 0 { "P" } else { " " },
+                            w.name,
+                            w.id,
+                            w.coordinates
+                        );
+                    }
+                }),
+                Some("goto") if !name.is_empty() => workspace::goto_workspace(&name),
+                Some("forget") if !name.is_empty() => workspace::forget_workspace(&name).and_then(|found| {
+                    if found { Ok(()) } else { Err(pointer::Error::Wayland(format!("no workspace named {name:?}"))) }
+                }),
+                Some(cmd @ ("send" | "take")) if !name.is_empty() => {
+                    workspace::send_focused_to_workspace(&name, cmd == "take").and_then(|moved| {
+                        if moved { Ok(()) } else { Err(pointer::Error::Wayland("no focused window".into())) }
+                    })
+                }
+                _ => fail(USAGE),
+            };
+            if let Err(e) = result {
+                fail(e);
             }
         }
         Some("keys") => {

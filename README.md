@@ -54,6 +54,19 @@ app, in `target/{release,debug}/` of this directory (development builds) and fin
 `$PATH`. If it is not already running on the bus, Kando spawns it with
 `daemon --exit-with-parent`.
 
+## Workspaces
+
+cosmic-comp (1.7) ignores `ext_workspace_group_handle_v1.create_workspace` and
+`zcosmic_workspace_handle_v2.rename`, but pinning works and gives a workspace a
+stable id. `workspace send|take|goto <name>` therefore pins the trailing empty
+workspace the first time a name is used and records `name<TAB>id` in
+`~/.config/kando-cosmic-helper/workspaces`. COSMIC itself keeps showing numbers.
+
+Compositor shortcuts (Super+M etc.) are not triggered by virtual-keyboard input, so
+window actions go through `zcosmic_toplevel_manager_v1` (`state @focused ...`).
+Kando's own windows are ignored when looking for the focused window, and the helper
+waits up to 700 ms for focus to return after the menu closes.
+
 ## CLI
 
 ```
@@ -61,5 +74,7 @@ kando-cosmic-helper [daemon] [--exit-with-parent] [--pointer-timeout-ms N]
 kando-cosmic-helper pointer [timeout-ms]
 kando-cosmic-helper move <dx> <dy>
 kando-cosmic-helper windows | focused | focus <app_id> <title>
+kando-cosmic-helper state <app_id>|@focused <title> fullscreen|unfullscreen|maximize|unmaximize|toggle-maximize|minimize|unminimize|toggle-sticky|close
+kando-cosmic-helper workspace list | goto <name> | send <name> | take <name> | forget <name>
 kando-cosmic-helper keys <x11keycode:down|up[:delay-ms]>...
 ```
