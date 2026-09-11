@@ -67,9 +67,6 @@ impl Helper {
     }
 }
 
-/// (windowTitle, appId, pointerX, pointerY, workAreaX, workAreaY, workAreaWidth, workAreaHeight)
-type WmInfo = (String, String, f64, f64, i32, i32, i32, i32);
-
 pub fn remember_work_area(cache: &WorkAreaCache, p: &pointer::PointerInfo) {
     cache
         .lock()
@@ -94,7 +91,11 @@ impl Helper {
     /// Everything Kando needs to open a menu, in one call:
     /// (windowTitle, appId, pointerX, pointerY, workAreaX, workAreaY, workAreaWidth, workAreaHeight)
     #[zbus(name = "GetWMInfo")]
-    fn get_wm_info(&self) -> fdo::Result<WmInfo> {
+    // The tuple must be spelled out here: zbus turns a literal tuple into eight
+    // separate out-arguments (signature `ssddiiii`), which is what Kando destructures.
+    // A type alias would become a single struct argument `(ssddiiii)`.
+    #[allow(clippy::type_complexity)]
+    fn get_wm_info(&self) -> fdo::Result<(String, String, f64, f64, i32, i32, i32, i32)> {
         self.guarded(|| {
             let window = toplevel::focused_toplevel()?.unwrap_or_default();
             let p = self.pointer_with_work_area()?;
