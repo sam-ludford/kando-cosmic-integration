@@ -250,6 +250,7 @@ pub enum StateChange {
     Unfullscreen,
     Maximize,
     Unmaximize,
+    Close,
 }
 
 /// Apply `change` to the first toplevel matching `app_id` and `title` (empty strings
@@ -270,6 +271,7 @@ pub fn set_toplevel_state(app_id: &str, title: &str, change: StateChange) -> Res
                 StateChange::Unfullscreen => manager.unset_fullscreen(&handle),
                 StateChange::Maximize => manager.set_maximized(&handle),
                 StateChange::Unmaximize => manager.unset_maximized(&handle),
+                StateChange::Close => manager.close(&handle),
             }
             true
         }

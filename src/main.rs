@@ -135,6 +135,7 @@ fn main() {
                 Some("unfullscreen") => toplevel::StateChange::Unfullscreen,
                 Some("maximize") => toplevel::StateChange::Maximize,
                 Some("unmaximize") => toplevel::StateChange::Unmaximize,
+                Some("close") => toplevel::StateChange::Close,
                 _ => fail(USAGE),
             };
             match toplevel::set_toplevel_state(&app_id, &title, change) {

@@ -28,7 +28,7 @@ with this content (COSMIC reloads it immediately):
     (
         enabled: true,
         appid: "menu.kando.Kando",
-        title: ".*",
+        title: "^Kando Menu$",
     ),
 ]
 ```
