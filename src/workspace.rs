@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Sam Ludford <samludford76@gmail.com>
+// SPDX-License-Identifier: MIT
+
 //! Workspace listing, creation and window placement via `ext_workspace_v1`,
 //! `zcosmic_workspace_manager_v2` (rename/pin) and
 //! `zcosmic_toplevel_manager_v1.move_to_ext_workspace`.
@@ -38,7 +41,9 @@ impl NameMap {
     fn path() -> std::path::PathBuf {
         let base = std::env::var_os("XDG_CONFIG_HOME")
             .map(std::path::PathBuf::from)
-            .or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".config")))
+            .or_else(|| {
+                std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".config"))
+            })
             .unwrap_or_default();
         base.join("kando-cosmic-helper").join("workspaces")
     }
@@ -47,7 +52,10 @@ impl NameMap {
         let entries = std::fs::read_to_string(Self::path())
             .unwrap_or_default()
             .lines()
-            .filter_map(|l| l.split_once('\t').map(|(n, i)| (n.to_string(), i.trim().to_string())))
+            .filter_map(|l| {
+                l.split_once('\t')
+                    .map(|(n, i)| (n.to_string(), i.trim().to_string()))
+            })
             .collect();
         NameMap { entries }
     }
@@ -57,23 +65,34 @@ impl NameMap {
         if let Some(dir) = path.parent() {
             std::fs::create_dir_all(dir).map_err(|e| Error::Wayland(e.to_string()))?;
         }
-        let body: String = self.entries.iter().map(|(n, i)| format!("{n}\t{i}\n")).collect();
+        let body: String = self
+            .entries
+            .iter()
+            .map(|(n, i)| format!("{n}\t{i}\n"))
+            .collect();
         std::fs::write(path, body).map_err(|e| Error::Wayland(e.to_string()))
     }
 
     fn id_for(&self, name: &str) -> Option<String> {
-        self.entries.iter().find(|(n, _)| n.eq_ignore_ascii_case(name)).map(|(_, i)| i.clone())
+        self.entries
+            .iter()
+            .find(|(n, _)| n.eq_ignore_ascii_case(name))
+            .map(|(_, i)| i.clone())
     }
 
     fn name_for(&self, id: &str) -> Option<&str> {
         if id.is_empty() {
             return None;
         }
-        self.entries.iter().find(|(_, i)| i == id).map(|(n, _)| n.as_str())
+        self.entries
+            .iter()
+            .find(|(_, i)| i == id)
+            .map(|(n, _)| n.as_str())
     }
 
     fn set(&mut self, name: &str, id: &str) {
-        self.entries.retain(|(n, i)| !n.eq_ignore_ascii_case(name) && i != id);
+        self.entries
+            .retain(|(n, i)| !n.eq_ignore_ascii_case(name) && i != id);
         self.entries.push((name.to_string(), id.to_string()));
     }
 
@@ -142,9 +161,16 @@ impl Dispatch<wl_registry::WlRegistry, ()> for State {
         _: &Connection,
         qh: &QueueHandle<Self>,
     ) {
-        if let wl_registry::Event::Global { name, interface, version } = event {
+        if let wl_registry::Event::Global {
+            name,
+            interface,
+            version,
+        } = event
+        {
             match interface.as_str() {
-                "wl_output" => state.outputs.push(registry.bind(name, version.min(4), qh, ())),
+                "wl_output" => state
+                    .outputs
+                    .push(registry.bind(name, version.min(4), qh, ())),
                 "ext_workspace_manager_v1" => {
                     state.ws_manager = Some(registry.bind(name, 1, qh, ()));
                 }
@@ -185,8 +211,10 @@ impl Dispatch<ext_workspace_manager_v1::ExtWorkspaceManagerV1, ()> for State {
                 });
             }
             ext_workspace_manager_v1::Event::Workspace { workspace } => {
-                let cosmic =
-                    state.cosmic_ws_manager.as_ref().map(|m| m.get_cosmic_workspace(&workspace, qh, ()));
+                let cosmic = state
+                    .cosmic_ws_manager
+                    .as_ref()
+                    .map(|m| m.get_cosmic_workspace(&workspace, qh, ()));
                 state.workspaces.push(WsEntry {
                     info: Workspace::default(),
                     ext: workspace,
@@ -214,15 +242,23 @@ impl Dispatch<ext_workspace_group_handle_v1::ExtWorkspaceGroupHandleV1, ()> for 
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        let Some(group) = state.groups.iter_mut().find(|g| g.handle == *handle) else { return };
+        let Some(group) = state.groups.iter_mut().find(|g| g.handle == *handle) else {
+            return;
+        };
         match event {
             ext_workspace_group_handle_v1::Event::Capabilities { capabilities } => {
                 group.can_create = capabilities
                     .into_result()
-                    .map(|c| c.contains(ext_workspace_group_handle_v1::GroupCapabilities::CreateWorkspace))
+                    .map(|c| {
+                        c.contains(
+                            ext_workspace_group_handle_v1::GroupCapabilities::CreateWorkspace,
+                        )
+                    })
                     .unwrap_or(false);
             }
-            ext_workspace_group_handle_v1::Event::OutputEnter { output } => group.outputs.push(output),
+            ext_workspace_group_handle_v1::Event::OutputEnter { output } => {
+                group.outputs.push(output)
+            }
             ext_workspace_group_handle_v1::Event::OutputLeave { output } => {
                 group.outputs.retain(|o| *o != output)
             }
@@ -246,7 +282,9 @@ impl Dispatch<ext_workspace_handle_v1::ExtWorkspaceHandleV1, ()> for State {
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        let Some(ws) = state.workspaces.iter_mut().find(|w| w.ext == *handle) else { return };
+        let Some(ws) = state.workspaces.iter_mut().find(|w| w.ext == *handle) else {
+            return;
+        };
         match event {
             ext_workspace_handle_v1::Event::Id { id } => ws.info.id = id,
             ext_workspace_handle_v1::Event::Name { name } => ws.info.name = name,
@@ -278,7 +316,10 @@ impl Dispatch<ext_foreign_toplevel_list_v1::ExtForeignToplevelListV1, ()> for St
         qh: &QueueHandle<Self>,
     ) {
         if let ext_foreign_toplevel_list_v1::Event::Toplevel { toplevel } = event {
-            let cosmic = state.top_info.as_ref().map(|i| i.get_cosmic_toplevel(&toplevel, qh, ()));
+            let cosmic = state
+                .top_info
+                .as_ref()
+                .map(|i| i.get_cosmic_toplevel(&toplevel, qh, ()));
             state.toplevels.push(Top {
                 ext: toplevel,
                 cosmic,
@@ -305,7 +346,9 @@ impl Dispatch<ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1, ()> fo
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        let Some(t) = state.toplevels.iter_mut().find(|t| t.ext == *handle) else { return };
+        let Some(t) = state.toplevels.iter_mut().find(|t| t.ext == *handle) else {
+            return;
+        };
         match event {
             ext_foreign_toplevel_handle_v1::Event::Title { title } => t.title = title,
             ext_foreign_toplevel_handle_v1::Event::AppId { app_id } => t.app_id = app_id,
@@ -343,7 +386,11 @@ impl Dispatch<zcosmic_toplevel_handle_v1::ZcosmicToplevelHandleV1, ()> for State
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        let Some(t) = state.toplevels.iter_mut().find(|t| t.cosmic.as_ref() == Some(handle)) else {
+        let Some(t) = state
+            .toplevels
+            .iter_mut()
+            .find(|t| t.cosmic.as_ref() == Some(handle))
+        else {
             return;
         };
         match event {
@@ -373,7 +420,11 @@ impl Dispatch<zcosmic_workspace_handle_v2::ZcosmicWorkspaceHandleV2, ()> for Sta
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        let Some(ws) = state.workspaces.iter_mut().find(|w| w.cosmic.as_ref() == Some(handle)) else {
+        let Some(ws) = state
+            .workspaces
+            .iter_mut()
+            .find(|w| w.cosmic.as_ref() == Some(handle))
+        else {
             return;
         };
         match event {
@@ -402,16 +453,22 @@ impl Session {
         let qh = queue.handle();
         let _registry = conn.display().get_registry(&qh, ());
         let mut state = State::default();
-        queue.roundtrip(&mut state).map_err(|e| Error::Wayland(e.to_string()))?;
+        queue
+            .roundtrip(&mut state)
+            .map_err(|e| Error::Wayland(e.to_string()))?;
         if state.ws_manager.is_none() {
             return Err(Error::MissingGlobal("ext_workspace_manager_v1"));
         }
         if state.top_list.is_none() || state.top_info.is_none() {
-            return Err(Error::MissingGlobal("ext_foreign_toplevel_list_v1 / zcosmic_toplevel_info_v1"));
+            return Err(Error::MissingGlobal(
+                "ext_foreign_toplevel_list_v1 / zcosmic_toplevel_info_v1",
+            ));
         }
         // Groups, workspaces and toplevels are announced now; their properties follow
         // with the respective `done` events.
-        queue.roundtrip(&mut state).map_err(|e| Error::Wayland(e.to_string()))?;
+        queue
+            .roundtrip(&mut state)
+            .map_err(|e| Error::Wayland(e.to_string()))?;
         crate::util::dispatch_until(&conn, &mut queue, &mut state, SYNC_TIMEOUT, |s| {
             s.ws_done && s.top_done
         })?;
@@ -421,7 +478,10 @@ impl Session {
     }
 
     fn sync(&mut self) -> Result<(), Error> {
-        self.queue.roundtrip(&mut self.state).map_err(|e| Error::Wayland(e.to_string())).map(|_| ())
+        self.queue
+            .roundtrip(&mut self.state)
+            .map_err(|e| Error::Wayland(e.to_string()))
+            .map(|_| ())
     }
 
     fn commit(&mut self) -> Result<(), Error> {
@@ -476,12 +536,18 @@ impl Session {
         cosmic.rename(name.to_string()); // honoured by future cosmic-comp versions
         cosmic.pin();
         self.commit()?;
-        let _ = crate::util::dispatch_until(&self.conn, &mut self.queue, &mut self.state, SYNC_TIMEOUT, |s| {
-            !s.workspaces[idx].info.id.is_empty()
-        });
+        let _ = crate::util::dispatch_until(
+            &self.conn,
+            &mut self.queue,
+            &mut self.state,
+            SYNC_TIMEOUT,
+            |s| !s.workspaces[idx].info.id.is_empty(),
+        );
         let id = self.state.workspaces[idx].info.id.clone();
         if id.is_empty() {
-            return Err(Error::Wayland("compositor did not pin the workspace".into()));
+            return Err(Error::Wayland(
+                "compositor did not pin the workspace".into(),
+            ));
         }
         let mut map = NameMap::load();
         map.set(name, &id);
@@ -500,9 +566,17 @@ impl Session {
     /// Wait briefly for a non-Kando window to become activated (focus returns to the
     /// user's window a few milliseconds after Kando's menu closes).
     fn wait_for_focus(&mut self) {
-        let _ = crate::util::dispatch_until(&self.conn, &mut self.queue, &mut self.state, FOCUS_SETTLE_TIMEOUT, |s| {
-            s.toplevels.iter().any(|t| !t.closed && t.activated && !crate::toplevel::is_kando(&t.app_id))
-        });
+        let _ = crate::util::dispatch_until(
+            &self.conn,
+            &mut self.queue,
+            &mut self.state,
+            FOCUS_SETTLE_TIMEOUT,
+            |s| {
+                s.toplevels
+                    .iter()
+                    .any(|t| !t.closed && t.activated && !crate::toplevel::is_kando(&t.app_id))
+            },
+        );
     }
 
     fn close(mut self) {
@@ -534,8 +608,13 @@ impl Session {
 /// All workspaces in coordinate order.
 pub fn list_workspaces() -> Result<Vec<Workspace>, Error> {
     let s = Session::open()?;
-    let mut list: Vec<Workspace> =
-        s.state.workspaces.iter().filter(|w| !w.removed).map(|w| w.info.clone()).collect();
+    let mut list: Vec<Workspace> = s
+        .state
+        .workspaces
+        .iter()
+        .filter(|w| !w.removed)
+        .map(|w| w.info.clone())
+        .collect();
     list.sort_by(|a, b| a.coordinates.cmp(&b.coordinates));
     s.close();
     Ok(list)
@@ -555,8 +634,11 @@ pub fn goto_workspace(name: &str) -> Result<(), Error> {
 /// With `follow`, switch to that workspace too. Returns false if no window is focused.
 pub fn send_focused_to_workspace(name: &str, follow: bool) -> Result<bool, Error> {
     let mut s = Session::open()?;
-    let manager =
-        s.state.top_manager.clone().ok_or(Error::MissingGlobal("zcosmic_toplevel_manager_v1 (v4+)"))?;
+    let manager = s
+        .state
+        .top_manager
+        .clone()
+        .ok_or(Error::MissingGlobal("zcosmic_toplevel_manager_v1 (v4+)"))?;
     let i = s.ensure(name)?;
     s.wait_for_focus();
     let Some(top) = s.focused_toplevel() else {
@@ -571,7 +653,14 @@ pub fn send_focused_to_workspace(name: &str, follow: bool) -> Result<bool, Error
         .outputs
         .first()
         .cloned()
-        .or_else(|| s.state.groups.iter().flat_map(|g| g.outputs.iter()).next().cloned())
+        .or_else(|| {
+            s.state
+                .groups
+                .iter()
+                .flat_map(|g| g.outputs.iter())
+                .next()
+                .cloned()
+        })
         .or_else(|| s.state.outputs.first().cloned())
         .ok_or(Error::NoOutputs)?;
     manager.move_to_ext_workspace(&cosmic, &s.state.workspaces[i].ext, &output);

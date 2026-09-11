@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Sam Ludford <samludford76@gmail.com>
+// SPDX-License-Identifier: MIT
+
 //! DBus front-end. Bus name `menu.kando.CosmicIntegration`, object path
 //! `/menu/kando/CosmicIntegration`, interface `menu.kando.CosmicIntegration1`.
 
@@ -30,7 +33,11 @@ pub struct Helper {
 
 impl Helper {
     pub fn new(pointer_timeout: Duration, work_areas: WorkAreaCache) -> Self {
-        Helper { pointer_timeout, lock: Mutex::new(()), work_areas }
+        Helper {
+            pointer_timeout,
+            lock: Mutex::new(()),
+            work_areas,
+        }
     }
 
     /// Pointer position plus the work area of its output, re-measuring the latter only
@@ -60,6 +67,9 @@ impl Helper {
     }
 }
 
+/// (windowTitle, appId, pointerX, pointerY, workAreaX, workAreaY, workAreaWidth, workAreaHeight)
+type WmInfo = (String, String, f64, f64, i32, i32, i32, i32);
+
 pub fn remember_work_area(cache: &WorkAreaCache, p: &pointer::PointerInfo) {
     cache
         .lock()
@@ -71,7 +81,8 @@ pub fn remember_work_area(cache: &WorkAreaCache, p: &pointer::PointerInfo) {
 impl Helper {
     /// Global pointer position.
     fn get_pointer(&self) -> fdo::Result<(f64, f64)> {
-        self.guarded(|| pointer::query_pointer(self.pointer_timeout)).map(|p| (p.x, p.y))
+        self.guarded(|| pointer::query_pointer(self.pointer_timeout))
+            .map(|p| (p.x, p.y))
     }
 
     /// Title and app id of the activated toplevel; empty strings if there is none.
@@ -83,12 +94,21 @@ impl Helper {
     /// Everything Kando needs to open a menu, in one call:
     /// (windowTitle, appId, pointerX, pointerY, workAreaX, workAreaY, workAreaWidth, workAreaHeight)
     #[zbus(name = "GetWMInfo")]
-    fn get_wm_info(&self) -> fdo::Result<(String, String, f64, f64, i32, i32, i32, i32)> {
+    fn get_wm_info(&self) -> fdo::Result<WmInfo> {
         self.guarded(|| {
             let window = toplevel::focused_toplevel()?.unwrap_or_default();
             let p = self.pointer_with_work_area()?;
             let w = p.work_area;
-            Ok((window.title, window.app_id, p.x, p.y, w.x, w.y, w.width, w.height))
+            Ok((
+                window.title,
+                window.app_id,
+                p.x,
+                p.y,
+                w.x,
+                w.y,
+                w.width,
+                w.height,
+            ))
         })
     }
 
@@ -105,7 +125,8 @@ impl Helper {
 
     /// Move the pointer by (dx, dy). Returns the new position.
     fn move_pointer(&self, dx: f64, dy: f64) -> fdo::Result<(f64, f64)> {
-        self.guarded(|| pointer::move_pointer(dx, dy, self.pointer_timeout)).map(|p| (p.x, p.y))
+        self.guarded(|| pointer::move_pointer(dx, dy, self.pointer_timeout))
+            .map(|p| (p.x, p.y))
     }
 
     /// Simulate key events: (x11Keycode, down, delayMs) per entry, same shape as the
@@ -113,7 +134,11 @@ impl Helper {
     fn simulate_keys(&self, keys: Vec<(i32, bool, i32)>) -> fdo::Result<()> {
         let keys: Vec<KeyEvent> = keys
             .into_iter()
-            .map(|(keycode, down, delay_ms)| KeyEvent { keycode, down, delay_ms })
+            .map(|(keycode, down, delay_ms)| KeyEvent {
+                keycode,
+                down,
+                delay_ms,
+            })
             .collect();
         self.guarded(|| keyboard::simulate_keys(&keys))
     }

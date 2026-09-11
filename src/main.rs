@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Sam Ludford <samludford76@gmail.com>
+// SPDX-License-Identifier: MIT
+
 mod dbus;
 mod keyboard;
 mod pointer;
@@ -26,8 +29,18 @@ fn fail(e: impl std::fmt::Display) -> ! {
 fn print_pointer(p: &pointer::PointerInfo) {
     println!(
         "x={} y={} output={} ({},{} {}x{}) workarea=({},{} {}x{}) elapsed={:?}",
-        p.x, p.y, p.output.name, p.output.x, p.output.y, p.output.width, p.output.height,
-        p.work_area.x, p.work_area.y, p.work_area.width, p.work_area.height, p.elapsed
+        p.x,
+        p.y,
+        p.output.name,
+        p.output.x,
+        p.output.y,
+        p.output.width,
+        p.output.height,
+        p.work_area.x,
+        p.work_area.y,
+        p.work_area.width,
+        p.work_area.height,
+        p.elapsed
     );
 }
 
@@ -41,7 +54,9 @@ fn daemon(args: &[String]) {
             "--pointer-timeout-ms" => {
                 i += 1;
                 timeout = Duration::from_millis(
-                    args.get(i).and_then(|s| s.parse().ok()).unwrap_or_else(|| fail(USAGE)),
+                    args.get(i)
+                        .and_then(|s| s.parse().ok())
+                        .unwrap_or_else(|| fail(USAGE)),
                 );
             }
             _ => fail(USAGE),
@@ -67,9 +82,11 @@ fn daemon(args: &[String]) {
     let work_areas: dbus::WorkAreaCache = Default::default();
     {
         let cache = work_areas.clone();
-        std::thread::spawn(move || match pointer::query_pointer_and_work_area(Duration::from_secs(2)) {
-            Ok(p) => dbus::remember_work_area(&cache, &p),
-            Err(e) => eprintln!("kando-cosmic-helper: initial work-area probe failed: {e}"),
+        std::thread::spawn(move || {
+            match pointer::query_pointer_and_work_area(Duration::from_secs(2)) {
+                Ok(p) => dbus::remember_work_area(&cache, &p),
+                Err(e) => eprintln!("kando-cosmic-helper: initial work-area probe failed: {e}"),
+            }
         });
     }
 
@@ -99,8 +116,14 @@ fn main() {
             }
         }
         Some("move") => {
-            let dx: f64 = args.get(1).and_then(|s| s.parse().ok()).unwrap_or_else(|| fail(USAGE));
-            let dy: f64 = args.get(2).and_then(|s| s.parse().ok()).unwrap_or_else(|| fail(USAGE));
+            let dx: f64 = args
+                .get(1)
+                .and_then(|s| s.parse().ok())
+                .unwrap_or_else(|| fail(USAGE));
+            let dy: f64 = args
+                .get(2)
+                .and_then(|s| s.parse().ok())
+                .unwrap_or_else(|| fail(USAGE));
             match pointer::move_pointer(dx, dy, Duration::from_millis(500)) {
                 Ok(p) => print_pointer(&p),
                 Err(e) => fail(e),
@@ -171,12 +194,24 @@ fn main() {
                     }
                 }),
                 Some("goto") if !name.is_empty() => workspace::goto_workspace(&name),
-                Some("forget") if !name.is_empty() => workspace::forget_workspace(&name).and_then(|found| {
-                    if found { Ok(()) } else { Err(pointer::Error::Wayland(format!("no workspace named {name:?}"))) }
-                }),
+                Some("forget") if !name.is_empty() => {
+                    workspace::forget_workspace(&name).and_then(|found| {
+                        if found {
+                            Ok(())
+                        } else {
+                            Err(pointer::Error::Wayland(format!(
+                                "no workspace named {name:?}"
+                            )))
+                        }
+                    })
+                }
                 Some(cmd @ ("send" | "take")) if !name.is_empty() => {
                     workspace::send_focused_to_workspace(&name, cmd == "take").and_then(|moved| {
-                        if moved { Ok(()) } else { Err(pointer::Error::Wayland("no focused window".into())) }
+                        if moved {
+                            Ok(())
+                        } else {
+                            Err(pointer::Error::Wayland("no focused window".into()))
+                        }
                     })
                 }
                 _ => fail(USAGE),
@@ -190,14 +225,21 @@ fn main() {
                 .iter()
                 .map(|spec| {
                     let parts: Vec<&str> = spec.split(':').collect();
-                    let keycode = parts.first().and_then(|s| s.parse().ok()).unwrap_or_else(|| fail(USAGE));
+                    let keycode = parts
+                        .first()
+                        .and_then(|s| s.parse().ok())
+                        .unwrap_or_else(|| fail(USAGE));
                     let down = match parts.get(1) {
                         Some(&"down") => true,
                         Some(&"up") => false,
                         _ => fail(USAGE),
                     };
                     let delay_ms = parts.get(2).and_then(|s| s.parse().ok()).unwrap_or(0);
-                    keyboard::KeyEvent { keycode, down, delay_ms }
+                    keyboard::KeyEvent {
+                        keycode,
+                        down,
+                        delay_ms,
+                    }
                 })
                 .collect();
             if let Err(e) = keyboard::simulate_keys(&keys) {

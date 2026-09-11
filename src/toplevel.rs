@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Sam Ludford <samludford76@gmail.com>
+// SPDX-License-Identifier: MIT
+
 //! Toplevel (window) listing, focused-window lookup and activation via
 //! `ext_foreign_toplevel_list_v1` + `zcosmic_toplevel_info_v1` / `zcosmic_toplevel_manager_v1`.
 
@@ -6,9 +9,7 @@ use cosmic_protocols::toplevel_info::v1::client::{
 };
 use cosmic_protocols::toplevel_management::v1::client::zcosmic_toplevel_manager_v1;
 use wayland_client::protocol::{wl_output, wl_registry, wl_seat};
-use wayland_client::{
-    delegate_noop, event_created_child, Connection, Dispatch, QueueHandle,
-};
+use wayland_client::{delegate_noop, event_created_child, Connection, Dispatch, QueueHandle};
 use wayland_protocols::ext::foreign_toplevel_list::v1::client::{
     ext_foreign_toplevel_handle_v1, ext_foreign_toplevel_list_v1,
 };
@@ -62,7 +63,12 @@ impl Dispatch<wl_registry::WlRegistry, ()> for State {
         _: &Connection,
         qh: &QueueHandle<Self>,
     ) {
-        if let wl_registry::Event::Global { name, interface, version } = event {
+        if let wl_registry::Event::Global {
+            name,
+            interface,
+            version,
+        } = event
+        {
             match interface.as_str() {
                 // Bound so the compositor may reference outputs in handle events.
                 "wl_output" => {
@@ -97,7 +103,10 @@ impl Dispatch<ext_foreign_toplevel_list_v1::ExtForeignToplevelListV1, ()> for St
         qh: &QueueHandle<Self>,
     ) {
         if let ext_foreign_toplevel_list_v1::Event::Toplevel { toplevel } = event {
-            let cosmic = state.info.as_ref().map(|i| i.get_cosmic_toplevel(&toplevel, qh, ()));
+            let cosmic = state
+                .info
+                .as_ref()
+                .map(|i| i.get_cosmic_toplevel(&toplevel, qh, ()));
             state.entries.push(Entry {
                 info: Toplevel::default(),
                 ext: toplevel,
@@ -124,7 +133,9 @@ impl Dispatch<ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1, ()> fo
     ) {
         let manager = state.manager.clone();
         let rule = state.auto_maximize.clone();
-        let Some(entry) = state.entries.iter_mut().find(|e| e.ext == *handle) else { return };
+        let Some(entry) = state.entries.iter_mut().find(|e| e.ext == *handle) else {
+            return;
+        };
         match event {
             ext_foreign_toplevel_handle_v1::Event::Title { title } => entry.info.title = title,
             ext_foreign_toplevel_handle_v1::Event::AppId { app_id } => entry.info.app_id = app_id,
@@ -134,7 +145,10 @@ impl Dispatch<ext_foreign_toplevel_handle_v1::ExtForeignToplevelHandleV1, ()> fo
                 if let (Some((app_id, title)), Some(manager), Some(cosmic)) =
                     (rule, manager, entry.cosmic.as_ref())
                 {
-                    if !entry.maximize_sent && entry.info.app_id == app_id && entry.info.title == title {
+                    if !entry.maximize_sent
+                        && entry.info.app_id == app_id
+                        && entry.info.title == title
+                    {
                         manager.set_maximized(cosmic);
                         entry.maximize_sent = true;
                     }
@@ -174,7 +188,11 @@ impl Dispatch<zcosmic_toplevel_handle_v1::ZcosmicToplevelHandleV1, ()> for State
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        let Some(entry) = state.entries.iter_mut().find(|e| e.cosmic.as_ref() == Some(handle)) else {
+        let Some(entry) = state
+            .entries
+            .iter_mut()
+            .find(|e| e.cosmic.as_ref() == Some(handle))
+        else {
             return;
         };
         if let zcosmic_toplevel_handle_v1::Event::State { state: raw } = event {
@@ -182,9 +200,12 @@ impl Dispatch<zcosmic_toplevel_handle_v1::ZcosmicToplevelHandleV1, ()> for State
                 .chunks_exact(4)
                 .map(|c| u32::from_ne_bytes([c[0], c[1], c[2], c[3]]))
                 .collect();
-            entry.info.activated = states.contains(&(zcosmic_toplevel_handle_v1::State::Activated as u32));
-            entry.info.maximized = states.contains(&(zcosmic_toplevel_handle_v1::State::Maximized as u32));
-            entry.info.sticky = states.contains(&(zcosmic_toplevel_handle_v1::State::Sticky as u32));
+            entry.info.activated =
+                states.contains(&(zcosmic_toplevel_handle_v1::State::Activated as u32));
+            entry.info.maximized =
+                states.contains(&(zcosmic_toplevel_handle_v1::State::Maximized as u32));
+            entry.info.sticky =
+                states.contains(&(zcosmic_toplevel_handle_v1::State::Sticky as u32));
         }
     }
 }
@@ -206,7 +227,9 @@ impl Session {
         let _registry = conn.display().get_registry(&qh, ());
         let mut state = State::default();
         let rt = |q: &mut wayland_client::EventQueue<State>, s: &mut State| {
-            q.roundtrip(s).map(|_| ()).map_err(|e| Error::Wayland(e.to_string()))
+            q.roundtrip(s)
+                .map(|_| ())
+                .map_err(|e| Error::Wayland(e.to_string()))
         };
         rt(&mut queue, &mut state)?; // globals
         if state.list.is_none() {
@@ -216,8 +239,8 @@ impl Session {
             return Err(Error::MissingGlobal("zcosmic_toplevel_info_v1 (v2+)"));
         }
         rt(&mut queue, &mut state)?; // toplevel handles + ext properties
-        // cosmic-comp sends the cosmic handles' state on its next refresh, not
-        // synchronously, so wait for the `done` event rather than a roundtrip.
+                                     // cosmic-comp sends the cosmic handles' state on its next refresh, not
+                                     // synchronously, so wait for the `done` event rather than a roundtrip.
         crate::util::dispatch_until(&conn, &mut queue, &mut state, DONE_TIMEOUT, |s| s.done)?;
         Ok(Session { queue, state })
     }
@@ -228,9 +251,17 @@ impl Session {
     fn open_with_focus() -> Result<Self, Error> {
         let mut s = Session::open()?;
         let conn = Connection::connect_to_env().map_err(|e| Error::Connect(e.to_string()))?;
-        let _ = crate::util::dispatch_until(&conn, &mut s.queue, &mut s.state, FOCUS_SETTLE_TIMEOUT, |st| {
-            st.entries.iter().any(|e| !e.closed && e.info.activated && !is_kando(&e.info.app_id))
-        });
+        let _ = crate::util::dispatch_until(
+            &conn,
+            &mut s.queue,
+            &mut s.state,
+            FOCUS_SETTLE_TIMEOUT,
+            |st| {
+                st.entries
+                    .iter()
+                    .any(|e| !e.closed && e.info.activated && !is_kando(&e.info.app_id))
+            },
+        );
         Ok(s)
     }
 
@@ -248,7 +279,12 @@ impl Session {
     }
 
     fn toplevels(&self) -> Vec<Toplevel> {
-        self.state.entries.iter().filter(|e| !e.closed).map(|e| e.info.clone()).collect()
+        self.state
+            .entries
+            .iter()
+            .filter(|e| !e.closed)
+            .map(|e| e.info.clone())
+            .collect()
     }
 }
 
@@ -283,9 +319,16 @@ pub enum StateChange {
 /// match any; the app id `@focused` selects the activated window). Returns false if
 /// nothing matched.
 pub fn set_toplevel_state(app_id: &str, title: &str, change: StateChange) -> Result<bool, Error> {
-    let mut s = if app_id == "@focused" { Session::open_with_focus()? } else { Session::open()? };
-    let manager =
-        s.state.manager.clone().ok_or(Error::MissingGlobal("zcosmic_toplevel_manager_v1"))?;
+    let mut s = if app_id == "@focused" {
+        Session::open_with_focus()?
+    } else {
+        Session::open()?
+    };
+    let manager = s
+        .state
+        .manager
+        .clone()
+        .ok_or(Error::MissingGlobal("zcosmic_toplevel_manager_v1"))?;
     let target = s.state.entries.iter().find(|e| {
         !e.closed
             && if app_id == "@focused" {
@@ -316,7 +359,9 @@ pub fn set_toplevel_state(app_id: &str, title: &str, change: StateChange) -> Res
         }
         None => false,
     };
-    s.queue.roundtrip(&mut s.state).map_err(|e| Error::Wayland(e.to_string()))?;
+    s.queue
+        .roundtrip(&mut s.state)
+        .map_err(|e| Error::Wayland(e.to_string()))?;
     s.close();
     Ok(found)
 }
@@ -324,8 +369,16 @@ pub fn set_toplevel_state(app_id: &str, title: &str, change: StateChange) -> Res
 /// Activate the first toplevel matching `app_id` and `title` (empty strings match any).
 pub fn focus_toplevel(app_id: &str, title: &str) -> Result<bool, Error> {
     let mut s = Session::open()?;
-    let manager = s.state.manager.clone().ok_or(Error::MissingGlobal("zcosmic_toplevel_manager_v1"))?;
-    let seat = s.state.seat.clone().ok_or(Error::MissingGlobal("wl_seat"))?;
+    let manager = s
+        .state
+        .manager
+        .clone()
+        .ok_or(Error::MissingGlobal("zcosmic_toplevel_manager_v1"))?;
+    let seat = s
+        .state
+        .seat
+        .clone()
+        .ok_or(Error::MissingGlobal("wl_seat"))?;
     let target = s.state.entries.iter().find(|e| {
         !e.closed
             && (app_id.is_empty() || e.info.app_id == app_id)
@@ -338,7 +391,9 @@ pub fn focus_toplevel(app_id: &str, title: &str) -> Result<bool, Error> {
         }
         None => false,
     };
-    s.queue.roundtrip(&mut s.state).map_err(|e| Error::Wayland(e.to_string()))?;
+    s.queue
+        .roundtrip(&mut s.state)
+        .map_err(|e| Error::Wayland(e.to_string()))?;
     s.close();
     Ok(found)
 }
@@ -364,8 +419,13 @@ fn auto_maximize_session(app_id: &str, title: &str) -> Result<(), Error> {
     let mut queue = conn.new_event_queue::<State>();
     let qh = queue.handle();
     let _registry = conn.display().get_registry(&qh, ());
-    let mut state = State { auto_maximize: Some((app_id.to_string(), title.to_string())), ..Default::default() };
-    queue.roundtrip(&mut state).map_err(|e| Error::Wayland(e.to_string()))?;
+    let mut state = State {
+        auto_maximize: Some((app_id.to_string(), title.to_string())),
+        ..Default::default()
+    };
+    queue
+        .roundtrip(&mut state)
+        .map_err(|e| Error::Wayland(e.to_string()))?;
     if state.list.is_none() {
         return Err(Error::MissingGlobal("ext_foreign_toplevel_list_v1"));
     }
@@ -376,12 +436,16 @@ fn auto_maximize_session(app_id: &str, title: &str) -> Result<(), Error> {
         return Err(Error::MissingGlobal("zcosmic_toplevel_manager_v1"));
     }
     // Windows that already exist are left alone: only mark them handled.
-    queue.roundtrip(&mut state).map_err(|e| Error::Wayland(e.to_string()))?;
+    queue
+        .roundtrip(&mut state)
+        .map_err(|e| Error::Wayland(e.to_string()))?;
     for e in state.entries.iter_mut() {
         e.maximize_sent = true;
     }
     loop {
-        queue.blocking_dispatch(&mut state).map_err(|e| Error::Wayland(e.to_string()))?;
+        queue
+            .blocking_dispatch(&mut state)
+            .map_err(|e| Error::Wayland(e.to_string()))?;
         state.entries.retain(|e| !e.closed);
     }
 }

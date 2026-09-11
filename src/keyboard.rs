@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Sam Ludford <samludford76@gmail.com>
+// SPDX-License-Identifier: MIT
+
 //! Key simulation via `zwp_virtual_keyboard_manager_v1`.
 //!
 //! The seat's real keymap is forwarded to the virtual keyboard and mirrored in an
@@ -40,7 +43,12 @@ impl Dispatch<wl_registry::WlRegistry, ()> for State {
         _: &Connection,
         qh: &QueueHandle<Self>,
     ) {
-        if let wl_registry::Event::Global { name, interface, version } = event {
+        if let wl_registry::Event::Global {
+            name,
+            interface,
+            version,
+        } = event
+        {
             match interface.as_str() {
                 "wl_seat" if state.seat.is_none() => {
                     state.seat = Some(registry.bind(name, version.min(7), qh, ()));
@@ -77,7 +85,10 @@ delegate_noop!(State: ignore zwp_virtual_keyboard_v1::ZwpVirtualKeyboardV1);
 
 pub fn simulate_keys(keys: &[KeyEvent]) -> Result<(), Error> {
     if let Some(bad) = keys.iter().find(|k| k.keycode < 8) {
-        return Err(Error::Wayland(format!("invalid X11 keycode {}", bad.keycode)));
+        return Err(Error::Wayland(format!(
+            "invalid X11 keycode {}",
+            bad.keycode
+        )));
     }
 
     let conn = Connection::connect_to_env().map_err(|e| Error::Connect(e.to_string()))?;
@@ -86,13 +97,17 @@ pub fn simulate_keys(keys: &[KeyEvent]) -> Result<(), Error> {
     let _registry = conn.display().get_registry(&qh, ());
     let mut state = State::default();
     let rt = |q: &mut wayland_client::EventQueue<State>, s: &mut State| {
-        q.roundtrip(s).map(|_| ()).map_err(|e| Error::Wayland(e.to_string()))
+        q.roundtrip(s)
+            .map(|_| ())
+            .map_err(|e| Error::Wayland(e.to_string()))
     };
     rt(&mut queue, &mut state)?;
 
     let seat = state.seat.clone().ok_or(Error::MissingGlobal("wl_seat"))?;
-    let manager =
-        state.manager.clone().ok_or(Error::MissingGlobal("zwp_virtual_keyboard_manager_v1"))?;
+    let manager = state
+        .manager
+        .clone()
+        .ok_or(Error::MissingGlobal("zwp_virtual_keyboard_manager_v1"))?;
 
     // Fetch the real keymap from the seat.
     let keyboard = seat.get_keyboard(&qh, ());
@@ -126,7 +141,11 @@ pub fn simulate_keys(keys: &[KeyEvent]) -> Result<(), Error> {
             if key.delay_ms > 0 {
                 std::thread::sleep(Duration::from_millis(key.delay_ms as u64));
             }
-            let direction = if key.down { xkb::KeyDirection::Down } else { xkb::KeyDirection::Up };
+            let direction = if key.down {
+                xkb::KeyDirection::Down
+            } else {
+                xkb::KeyDirection::Up
+            };
             let changed = xkb_state.update_key(xkb::Keycode::new(key.keycode as u32), direction);
             if changed != 0 {
                 vk.modifiers(

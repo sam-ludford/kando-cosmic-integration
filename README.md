@@ -1,27 +1,41 @@
-# kando-cosmic-helper
+<!--
+SPDX-FileCopyrightText: Sam Ludford <samludford76@gmail.com>
+SPDX-License-Identifier: CC-BY-4.0
+-->
 
-Small Rust daemon that gives Kando's COSMIC backend access to things cosmic-comp does
-not expose to Electron: the pointer position, the focused window, window activation,
-key simulation and pointer warping. It serves `menu.kando.CosmicIntegration1` on the
-session bus at `/menu/kando/CosmicIntegration`.
+# COSMIC Integration for Kando
 
-| Feature          | Wayland protocol                                   |
-| ---------------- | -------------------------------------------------- |
-| Pointer position | `zwlr_layer_shell_v1` overlay + `wl_pointer.enter` |
-| Pointer warp     | `wp_pointer_warp_v1`                               |
-| Windows / focus  | `ext_foreign_toplevel_list_v1` + `zcosmic_toplevel_info_v1` |
-| Activate window  | `zcosmic_toplevel_manager_v1`                      |
-| Key simulation   | `zwp_virtual_keyboard_manager_v1`                  |
+This small D-Bus daemon is required for 🌸 [Kando](https://github.com/kando-menu/kando) on the [COSMIC desktop](https://system76.com/cosmic) (cosmic-comp, Wayland).
+Kando's COSMIC backend talks to it over the session bus, in the same way the GNOME backend talks to the [GNOME Shell extension](https://github.com/kando-menu/gnome-shell-integration).
 
-Global shortcuts are not possible on COSMIC (no GlobalShortcuts portal). Bind
-`kando --menu "Menu Name"` to a custom shortcut in COSMIC Settings instead.
+cosmic-comp exposes neither a pointer query, nor the wlroots foreign-toplevel or virtual-pointer protocols, nor the GlobalShortcuts portal, so Electron alone cannot open a pie menu under the cursor. The daemon fills these gaps with the protocols COSMIC does offer:
 
-## Window rule (required)
+| Kando needs | Provided through |
+| --- | --- |
+| Pointer position and work area | a transparent `zwlr_layer_shell_v1` overlay that reports `wl_pointer.enter` |
+| Focused window, window list, activation | `ext_foreign_toplevel_list_v1` + `zcosmic_toplevel_info_v1` / `zcosmic_toplevel_manager_v1` |
+| Pointer warping | `wp_pointer_warp_v1` |
+| Key simulation | `zwp_virtual_keyboard_manager_v1` with the seat's own keymap |
+| A full-size, transparent menu window | the daemon maximizes Kando's menu window as soon as it maps (cosmic-comp clamps floating windows to two thirds of the output, and fullscreen gets an opaque backdrop) |
 
-cosmic-comp auto-tiles every new window unless it has a floating exception, and
-there is no protocol to opt out. Create
-`~/.config/cosmic/com.system76.CosmicSettings.WindowRules/v1/tiling_exception_custom`
-with this content (COSMIC reloads it immediately):
+It also gives menu items a way to do COSMIC-specific things that key simulation cannot do (cosmic-comp does not run its own shortcuts for virtual-keyboard input): maximize, minimize, close or pin the focused window, and move it to a **named workspace**.
+
+## ⬇️ Installation
+
+You need a Rust toolchain (`cargo`), `pkg-config` and `libxkbcommon-dev`.
+
+```bash
+git clone https://github.com/sam-ludford/kando-cosmic-integration.git
+cd kando-cosmic-integration
+make install   # builds and installs ~/.local/bin/kando-cosmic-helper
+make rule      # adds the COSMIC floating-window rule for Kando (see below)
+```
+
+Kando starts the daemon itself when its COSMIC backend initializes; it looks for `kando-cosmic-helper` in `$KANDO_COSMIC_HELPER`, next to the packaged app, and on `$PATH`.
+
+### Floating-window rule (required)
+
+cosmic-comp auto-tiles every new window unless there is an exception for it, and there is no protocol to opt out. `make rule` writes this to `~/.config/cosmic/com.system76.CosmicSettings.WindowRules/v1/tiling_exception_custom` (COSMIC reloads it immediately):
 
 ```ron
 [
@@ -33,48 +47,53 @@ with this content (COSMIC reloads it immediately):
 ]
 ```
 
-Floating windows are clamped to two thirds of the output, so the daemon watches for
-Kando's menu window and maximizes it via `zcosmic_toplevel_manager_v1` as soon as it
-maps. Fullscreen is not used because cosmic-comp paints an opaque backdrop behind
-fullscreen windows.
+### Opening menus
 
-The work area (output minus panels) is measured once at startup by mapping two probe
-overlays, one ignoring exclusive zones and one respecting them, and cached per output
-for ten minutes.
-
-## Build
+COSMIC has no GlobalShortcuts portal, so Kando cannot bind shortcuts itself. Add a custom shortcut in *COSMIC Settings → Input Devices → Keyboard → Keyboard Shortcuts → Custom* running
 
 ```bash
-sudo apt install build-essential pkg-config libxkbcommon-dev
-cargo build --release
+kando --menu "Menu Name"
 ```
 
-The Kando backend looks for the binary in `$KANDO_COSMIC_HELPER`, next to the packaged
-app, in `target/{release,debug}/` of this directory (development builds) and finally on
-`$PATH`. If it is not already running on the bus, Kando spawns it with
-`daemon --exit-with-parent`.
+Mouse buttons work the same way: divert a button in [Solaar](https://github.com/pwr-Solaar/Solaar) and add a rule that executes the command.
 
-## Workspaces
+## 🧩 D-Bus interface
 
-cosmic-comp (1.7) ignores `ext_workspace_group_handle_v1.create_workspace` and
-`zcosmic_workspace_handle_v2.rename`, but pinning works and gives a workspace a
-stable id. `workspace send|take|goto <name>` therefore pins the trailing empty
-workspace the first time a name is used and records `name<TAB>id` in
-`~/.config/kando-cosmic-helper/workspaces`. COSMIC itself keeps showing numbers.
+Bus name `menu.kando.CosmicIntegration`, object `/menu/kando/CosmicIntegration`, interface `menu.kando.CosmicIntegration1`:
 
-Compositor shortcuts (Super+M etc.) are not triggered by virtual-keyboard input, so
-window actions go through `zcosmic_toplevel_manager_v1` (`state @focused ...`).
-Kando's own windows are ignored when looking for the focused window, and the helper
-waits up to 700 ms for focus to return after the menu closes.
+| Method | Signature | Description |
+| --- | --- | --- |
+| `GetWMInfo` | `() → (ssddiiii)` | window title, app id, pointer x/y, work area x/y/w/h |
+| `GetPointer` | `() → (dd)` | pointer position |
+| `GetFocusedWindow` | `() → (ss)` | title and app id of the activated window |
+| `GetOpenWindows` | `() → a(ss)` | all toplevels |
+| `FocusWindow` | `(ss) → b` | activate a window by title and app id |
+| `MovePointer` | `(dd) → (dd)` | warp by a delta, returns the new position |
+| `SimulateKeys` | `(a(ibi))` | X11 keycode, pressed, delay in ms; same shape as the GNOME extension |
 
-## CLI
+## 🖥️ Command line
+
+The same binary doubles as a CLI, which is what the COSMIC example menu in Kando uses:
 
 ```
 kando-cosmic-helper [daemon] [--exit-with-parent] [--pointer-timeout-ms N]
-kando-cosmic-helper pointer [timeout-ms]
-kando-cosmic-helper move <dx> <dy>
+kando-cosmic-helper pointer | workarea | move <dx> <dy>
 kando-cosmic-helper windows | focused | focus <app_id> <title>
 kando-cosmic-helper state <app_id>|@focused <title> fullscreen|unfullscreen|maximize|unmaximize|toggle-maximize|minimize|unminimize|toggle-sticky|close
 kando-cosmic-helper workspace list | goto <name> | send <name> | take <name> | forget <name>
 kando-cosmic-helper keys <x11keycode:down|up[:delay-ms]>...
 ```
+
+`@focused` selects the window that had focus before Kando's menu opened; Kando's own windows are ignored and the helper waits briefly for focus to return after the menu closes.
+
+### Named workspaces
+
+cosmic-comp (1.7) ignores `create_workspace` and `rename` requests but honours pinning, which gives a workspace a stable id. `workspace send|take|goto <name>` therefore pins the trailing empty workspace the first time a name is used and records `name<TAB>id` in `~/.config/kando-cosmic-helper/workspaces`. COSMIC's own overview keeps showing numbers; the names live in your Kando menu. `workspace forget <name>` unpins it again.
+
+## 🗒️ Changelog
+
+See [changelog.md](./changelog.md).
+
+## 📜 License
+
+MIT, see [LICENSE](./LICENSE).

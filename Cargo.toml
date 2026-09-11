@@ -1,9 +1,11 @@
 [package]
 name = "kando-cosmic-helper"
 version = "0.1.0"
+authors = ["Sam Ludford <samludford76@gmail.com>"]
+repository = "https://github.com/sam-ludford/kando-cosmic-integration"
 edition = "2021"
 license = "MIT"
-description = "DBus helper daemon that gives Kando access to COSMIC/Wayland state"
+description = "D-Bus helper required for Kando on the COSMIC desktop"
 
 [dependencies]
 wayland-client = "0.31"

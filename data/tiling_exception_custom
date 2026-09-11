@@ -1,0 +1,7 @@
+[
+    (
+        enabled: true,
+        appid: "menu.kando.Kando",
+        title: "^Kando Menu$",
+    ),
+]

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Sam Ludford <samludford76@gmail.com>
+// SPDX-License-Identifier: MIT
+
 //! Pointer position query and pointer warping for compositors that expose no
 //! pointer-query API.
 //!
@@ -13,17 +16,13 @@ use std::os::fd::{AsFd, AsRawFd, FromRawFd, OwnedFd};
 use std::time::{Duration, Instant};
 
 use wayland_client::protocol::{
-    wl_buffer, wl_compositor, wl_keyboard, wl_output, wl_pointer, wl_registry, wl_seat,
-    wl_shm, wl_shm_pool, wl_surface, wl_touch,
+    wl_buffer, wl_compositor, wl_keyboard, wl_output, wl_pointer, wl_registry, wl_seat, wl_shm,
+    wl_shm_pool, wl_surface, wl_touch,
 };
 use wayland_client::{delegate_noop, Connection, Dispatch, EventQueue, QueueHandle, WEnum};
 use wayland_protocols::wp::pointer_warp::v1::client::wp_pointer_warp_v1;
-use wayland_protocols::xdg::xdg_output::zv1::client::{
-    zxdg_output_manager_v1, zxdg_output_v1,
-};
-use wayland_protocols_wlr::layer_shell::v1::client::{
-    zwlr_layer_shell_v1, zwlr_layer_surface_v1,
-};
+use wayland_protocols::xdg::xdg_output::zv1::client::{zxdg_output_manager_v1, zxdg_output_v1};
+use wayland_protocols_wlr::layer_shell::v1::client::{zwlr_layer_shell_v1, zwlr_layer_surface_v1};
 
 #[derive(Debug, Clone, Default)]
 pub struct OutputInfo {
@@ -174,7 +173,12 @@ impl Dispatch<wl_registry::WlRegistry, ()> for State {
         _: &Connection,
         qh: &QueueHandle<Self>,
     ) {
-        if let wl_registry::Event::Global { name, interface, version } = event {
+        if let wl_registry::Event::Global {
+            name,
+            interface,
+            version,
+        } = event
+        {
             match interface.as_str() {
                 "wl_compositor" => {
                     state.compositor = Some(registry.bind(name, version.min(4), qh, ()));
@@ -189,15 +193,13 @@ impl Dispatch<wl_registry::WlRegistry, ()> for State {
                     state.layer_shell = Some(registry.bind(name, version.min(4), qh, ()));
                 }
                 "zxdg_output_manager_v1" => {
-                    state.xdg_output_manager =
-                        Some(registry.bind(name, version.min(3), qh, ()));
+                    state.xdg_output_manager = Some(registry.bind(name, version.min(3), qh, ()));
                 }
                 "wp_pointer_warp_v1" => {
                     state.pointer_warp = Some(registry.bind(name, 1, qh, ()));
                 }
                 "wl_output" => {
-                    let output: wl_output::WlOutput =
-                        registry.bind(name, version.min(4), qh, name);
+                    let output: wl_output::WlOutput = registry.bind(name, version.min(4), qh, name);
                     state.outputs.insert(name, (output, OutputInfo::default()));
                 }
                 _ => {}
@@ -265,7 +267,10 @@ impl Dispatch<wl_seat::WlSeat, ()> for State {
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        if let wl_seat::Event::Capabilities { capabilities: WEnum::Value(caps) } = event {
+        if let wl_seat::Event::Capabilities {
+            capabilities: WEnum::Value(caps),
+        } = event
+        {
             state.has_pointer = caps.contains(wl_seat::Capability::Pointer);
             state.has_touch = caps.contains(wl_seat::Capability::Touch);
         }
@@ -281,7 +286,12 @@ impl Dispatch<zwlr_layer_surface_v1::ZwlrLayerSurfaceV1, u32> for State {
         _: &Connection,
         qh: &QueueHandle<Self>,
     ) {
-        if let zwlr_layer_surface_v1::Event::Configure { serial, width, height } = event {
+        if let zwlr_layer_surface_v1::Event::Configure {
+            serial,
+            width,
+            height,
+        } = event
+        {
             layer.ack_configure(serial);
             let Some(shm) = state.shm.clone() else { return };
             let Some(overlay) = state.overlays.iter_mut().find(|o| o.layer == *layer) else {
@@ -303,7 +313,9 @@ impl Dispatch<zwlr_layer_surface_v1::ZwlrLayerSurfaceV1, u32> for State {
                 overlay.height = height;
             }
             overlay.surface.attach(overlay.buffer.as_ref(), 0, 0);
-            overlay.surface.damage_buffer(0, 0, width as i32, height as i32);
+            overlay
+                .surface
+                .damage_buffer(0, 0, width as i32, height as i32);
             overlay.surface.commit();
         }
     }
@@ -319,18 +331,35 @@ impl Dispatch<wl_pointer::WlPointer, ()> for State {
         _: &QueueHandle<Self>,
     ) {
         match event {
-            wl_pointer::Event::Enter { serial, surface, surface_x, surface_y } => {
+            wl_pointer::Event::Enter {
+                serial,
+                surface,
+                surface_x,
+                surface_y,
+            } => {
                 if let Some(o) = state.overlay_for_surface(&surface) {
-                    let hit = Hit { output_id: o.output_id, kind: o.kind, x: surface_x, y: surface_y, serial };
+                    let hit = Hit {
+                        output_id: o.output_id,
+                        kind: o.kind,
+                        x: surface_x,
+                        y: surface_y,
+                        serial,
+                    };
                     match o.kind {
                         OverlayKind::Full if state.hit.is_none() => state.hit = Some(hit),
-                        OverlayKind::WorkArea if state.work_hit.is_none() => state.work_hit = Some(hit),
+                        OverlayKind::WorkArea if state.work_hit.is_none() => {
+                            state.work_hit = Some(hit)
+                        }
                         _ => {}
                     }
                 }
             }
             // Keeps the reported position current after a warp.
-            wl_pointer::Event::Motion { surface_x, surface_y, .. } => {
+            wl_pointer::Event::Motion {
+                surface_x,
+                surface_y,
+                ..
+            } => {
                 if let Some(hit) = state.hit.as_mut() {
                     hit.x = surface_x;
                     hit.y = surface_y;
@@ -350,9 +379,22 @@ impl Dispatch<wl_touch::WlTouch, ()> for State {
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-        if let wl_touch::Event::Down { serial, surface, x, y, .. } = event {
+        if let wl_touch::Event::Down {
+            serial,
+            surface,
+            x,
+            y,
+            ..
+        } = event
+        {
             if let Some(o) = state.overlay_for_surface(&surface) {
-                let hit = Hit { output_id: o.output_id, kind: o.kind, x, y, serial };
+                let hit = Hit {
+                    output_id: o.output_id,
+                    kind: o.kind,
+                    x,
+                    y,
+                    serial,
+                };
                 match o.kind {
                     OverlayKind::Full if state.hit.is_none() => state.hit = Some(hit),
                     OverlayKind::WorkArea if state.work_hit.is_none() => state.work_hit = Some(hit),
@@ -391,21 +433,31 @@ impl Probe {
     /// exclusive keyboard interactivity: cosmic-comp only honours
     /// wp_pointer_warp_v1 for the keyboard-focused surface. Focus returns to the
     /// previous surface on unmap.
-    fn map(timeout: Duration, take_keyboard_focus: bool, measure_work_area: bool) -> Result<Self, Error> {
+    fn map(
+        timeout: Duration,
+        take_keyboard_focus: bool,
+        measure_work_area: bool,
+    ) -> Result<Self, Error> {
         let conn = Connection::connect_to_env().map_err(|e| Error::Connect(e.to_string()))?;
         let mut queue = conn.new_event_queue::<State>();
         let qh = queue.handle();
         let _registry = conn.display().get_registry(&qh, ());
 
         let mut state = State::default();
-        queue.roundtrip(&mut state).map_err(|e| Error::Wayland(e.to_string()))?;
+        queue
+            .roundtrip(&mut state)
+            .map_err(|e| Error::Wayland(e.to_string()))?;
 
-        let compositor =
-            state.compositor.clone().ok_or(Error::MissingGlobal("wl_compositor"))?;
+        let compositor = state
+            .compositor
+            .clone()
+            .ok_or(Error::MissingGlobal("wl_compositor"))?;
         state.shm.as_ref().ok_or(Error::MissingGlobal("wl_shm"))?;
         let seat = state.seat.clone().ok_or(Error::MissingGlobal("wl_seat"))?;
-        let layer_shell =
-            state.layer_shell.clone().ok_or(Error::MissingGlobal("zwlr_layer_shell_v1"))?;
+        let layer_shell = state
+            .layer_shell
+            .clone()
+            .ok_or(Error::MissingGlobal("zwlr_layer_shell_v1"))?;
         if state.outputs.is_empty() {
             return Err(Error::NoOutputs);
         }
@@ -415,10 +467,16 @@ impl Probe {
             .xdg_output_manager
             .as_ref()
             .map(|m| {
-                state.outputs.iter().map(|(id, (o, _))| m.get_xdg_output(o, &qh, *id)).collect()
+                state
+                    .outputs
+                    .iter()
+                    .map(|(id, (o, _))| m.get_xdg_output(o, &qh, *id))
+                    .collect()
             })
             .unwrap_or_default();
-        queue.roundtrip(&mut state).map_err(|e| Error::Wayland(e.to_string()))?;
+        queue
+            .roundtrip(&mut state)
+            .map_err(|e| Error::Wayland(e.to_string()))?;
 
         if !state.has_pointer && !state.has_touch {
             return Err(Error::NoInputDevice);
@@ -462,11 +520,13 @@ impl Probe {
                     // Sized to the area left over by panels.
                     OverlayKind::WorkArea => 0,
                 });
-                layer.set_keyboard_interactivity(if take_keyboard_focus && *kind == OverlayKind::Full {
-                    zwlr_layer_surface_v1::KeyboardInteractivity::Exclusive
-                } else {
-                    zwlr_layer_surface_v1::KeyboardInteractivity::None
-                });
+                layer.set_keyboard_interactivity(
+                    if take_keyboard_focus && *kind == OverlayKind::Full {
+                        zwlr_layer_surface_v1::KeyboardInteractivity::Exclusive
+                    } else {
+                        zwlr_layer_surface_v1::KeyboardInteractivity::None
+                    },
+                );
                 surface.commit();
                 state.overlays.push(Overlay {
                     output_id: *id,
@@ -481,8 +541,9 @@ impl Probe {
         }
 
         let start = Instant::now();
-        let waited =
-            crate::util::dispatch_until(&conn, &mut queue, &mut state, timeout, |s| s.hit.is_some());
+        let waited = crate::util::dispatch_until(&conn, &mut queue, &mut state, timeout, |s| {
+            s.hit.is_some()
+        });
         let elapsed = start.elapsed();
 
         let mut probe = Probe {
@@ -493,7 +554,13 @@ impl Probe {
             touch,
             keyboard,
             xdg_outputs,
-            hit: Hit { output_id: 0, kind: OverlayKind::Full, x: 0.0, y: 0.0, serial: 0 },
+            hit: Hit {
+                output_id: 0,
+                kind: OverlayKind::Full,
+                x: 0.0,
+                y: 0.0,
+                serial: 0,
+            },
             elapsed,
         };
         match waited.and_then(|_| probe.state.hit.ok_or(Error::Timeout(timeout))) {
@@ -510,19 +577,34 @@ impl Probe {
 
     fn info(&self) -> PointerInfo {
         let hit = self.state.hit.unwrap_or(self.hit);
-        let output =
-            self.state.outputs.get(&hit.output_id).map(|(_, i)| i.clone()).unwrap_or_default();
+        let output = self
+            .state
+            .outputs
+            .get(&hit.output_id)
+            .map(|(_, i)| i.clone())
+            .unwrap_or_default();
         let x = output.x as f64 + hit.x;
         let y = output.y as f64 + hit.y;
         let work_area = self.work_area(&output, x, y);
-        PointerInfo { x, y, output, work_area, elapsed: self.elapsed }
+        PointerInfo {
+            x,
+            y,
+            output,
+            work_area,
+            elapsed: self.elapsed,
+        }
     }
 
     /// Work area of `output`: size from the WorkArea overlay's configure, origin from
     /// the pointer entering it (global minus surface-local). Falls back to the output
     /// geometry / origin when it could not be measured.
     fn work_area(&self, output: &OutputInfo, gx: f64, gy: f64) -> Rect {
-        let mut rect = Rect { x: output.x, y: output.y, width: output.width, height: output.height };
+        let mut rect = Rect {
+            x: output.x,
+            y: output.y,
+            width: output.width,
+            height: output.height,
+        };
         let overlay = self
             .state
             .overlays
@@ -531,7 +613,11 @@ impl Probe {
         if let Some(o) = overlay.filter(|o| o.width > 0 && o.height > 0) {
             rect.width = o.width as i32;
             rect.height = o.height as i32;
-            if let Some(wh) = self.state.work_hit.filter(|h| h.output_id == self.hit.output_id) {
+            if let Some(wh) = self
+                .state
+                .work_hit
+                .filter(|h| h.output_id == self.hit.output_id)
+            {
                 rect.x = (gx - wh.x).round() as i32;
                 rect.y = (gy - wh.y).round() as i32;
             }
@@ -555,17 +641,29 @@ impl Probe {
             }
         }
         self.state.overlays = remaining;
-        let result = crate::util::dispatch_until(&self.conn, &mut self.queue, &mut self.state, timeout, |s| {
-            s.work_hit.is_some()
-        });
+        let result = crate::util::dispatch_until(
+            &self.conn,
+            &mut self.queue,
+            &mut self.state,
+            timeout,
+            |s| s.work_hit.is_some(),
+        );
         if std::env::var_os("KANDO_HELPER_DEBUG").is_some() {
-            eprintln!("debug: work-area probe: {:?} hit={:?}", result.err(), self.state.work_hit);
+            eprintln!(
+                "debug: work-area probe: {:?} hit={:?}",
+                result.err(),
+                self.state.work_hit
+            );
         }
     }
 
     /// Warp the pointer by (dx, dy), clamped to the output the pointer is on.
     fn warp(&mut self, dx: f64, dy: f64) -> Result<(), Error> {
-        let warp = self.state.pointer_warp.clone().ok_or(Error::MissingGlobal("wp_pointer_warp_v1"))?;
+        let warp = self
+            .state
+            .pointer_warp
+            .clone()
+            .ok_or(Error::MissingGlobal("wp_pointer_warp_v1"))?;
         let pointer = self.pointer.clone().ok_or(Error::NoInputDevice)?;
         let overlay = self
             .state
@@ -577,7 +675,9 @@ impl Probe {
         let y = (self.hit.y + dy).clamp(0.0, overlay.height.saturating_sub(1) as f64);
         warp.warp_pointer(&overlay.surface, &pointer, x, y, self.hit.serial);
         // The compositor answers with a motion event carrying the new position.
-        self.queue.roundtrip(&mut self.state).map_err(|e| Error::Wayland(e.to_string()))?;
+        self.queue
+            .roundtrip(&mut self.state)
+            .map_err(|e| Error::Wayland(e.to_string()))?;
         Ok(())
     }
 

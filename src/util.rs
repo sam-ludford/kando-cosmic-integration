@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Sam Ludford <samludford76@gmail.com>
+// SPDX-License-Identifier: MIT
+
 use std::os::fd::AsRawFd;
 use std::time::{Duration, Instant};
 
@@ -15,13 +18,19 @@ pub fn dispatch_until<S>(
 ) -> Result<(), Error> {
     let start = Instant::now();
     loop {
-        queue.dispatch_pending(state).map_err(|e| Error::Wayland(e.to_string()))?;
+        queue
+            .dispatch_pending(state)
+            .map_err(|e| Error::Wayland(e.to_string()))?;
         if done(state) {
             return Ok(());
         }
-        let remaining = timeout.checked_sub(start.elapsed()).ok_or(Error::Timeout(timeout))?;
+        let remaining = timeout
+            .checked_sub(start.elapsed())
+            .ok_or(Error::Timeout(timeout))?;
         conn.flush().map_err(|e| Error::Wayland(e.to_string()))?;
-        let Some(guard) = queue.prepare_read() else { continue };
+        let Some(guard) = queue.prepare_read() else {
+            continue;
+        };
         let mut pfd = libc::pollfd {
             fd: guard.connection_fd().as_raw_fd(),
             events: libc::POLLIN,
