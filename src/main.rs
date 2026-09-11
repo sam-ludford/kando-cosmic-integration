@@ -80,16 +80,13 @@ fn daemon(args: &[String]) {
         toplevel::auto_maximize_forever("menu.kando.Kando".into(), "Kando Menu".into())
     });
 
-    // Measure the work area once up front so the first menu opens fast.
+    // Measure the work area once up front so the first menu opens fast. This runs
+    // before the bus name is owned: a concurrent probe from GetWMInfo would map a second
+    // set of overlays and steal the enter event.
     let work_areas: dbus::WorkAreaCache = Default::default();
-    {
-        let cache = work_areas.clone();
-        std::thread::spawn(move || {
-            match pointer::query_pointer_and_work_area(Duration::from_secs(2)) {
-                Ok(p) => dbus::remember_work_area(&cache, &p),
-                Err(e) => eprintln!("kando-cosmic-helper: initial work-area probe failed: {e}"),
-            }
-        });
+    match pointer::query_pointer_and_work_area(Duration::from_secs(2)) {
+        Ok(p) => dbus::remember_work_area(&work_areas, &p),
+        Err(e) => eprintln!("kando-cosmic-helper: initial work-area probe failed: {e}"),
     }
 
     if let Err(e) = dbus::serve(dbus::Helper::new(timeout, work_areas)) {
